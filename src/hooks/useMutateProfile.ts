@@ -1,0 +1,76 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { TaxpayerProfile } from '@/types/taxpayer';
+import { useTaxpayerStore } from '@/store/useTaxpayerStore';
+
+export function useMutateProfile() {
+  const queryClient = useQueryClient();
+  const setProfile = useTaxpayerStore((state) => state.setProfile);
+
+  return useMutation({
+    mutationFn: async (profileData: TaxpayerProfile) => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Pengguna tidak terautentikasi.');
+
+      // Melakukan upsert data ke tabel public.profiles berbasis user.id (termasuk kolom personalisasi AI baru)
+      let { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: profileData.fullName,
+          taxpayer_type: profileData.taxpayerType,
+          nik: profileData.nik,
+          npwp: profileData.npwp,
+          phone_number: profileData.phoneNumber,
+          occupation: profileData.occupation || null,
+          education: profileData.education || null,
+          marital_status: profileData.maritalStatus || null,
+          dependents: profileData.dependents !== undefined ? profileData.dependents : 0,
+          hobbies: profileData.hobbies || null,
+        })
+        .select()
+        .single();
+
+      // Jika terjadi error karena kolom AI belum dibuat di database (misal dependents, occupation dll),
+      // maka sistem secara otomatis melakukan fallback dengan menyimpan profil dasar saja.
+      if (error && (error.message.includes('dependents') || error.message.includes('column'))) {
+        console.warn('Failing back to basic profile upsert due to missing columns in DB:', error.message);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            full_name: profileData.fullName,
+            taxpayer_type: profileData.taxpayerType,
+            nik: profileData.nik,
+            npwp: profileData.npwp,
+            phone_number: profileData.phoneNumber,
+          })
+          .select()
+          .single();
+
+        if (fallbackError) throw new Error(fallbackError.message);
+        return fallbackData;
+      }
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      // Sinkronisasi data ke Zustand store global secara real-time
+      setProfile({
+        fullName: data.full_name,
+        taxpayerType: data.taxpayer_type as 'pribadi' | 'badan',
+        nik: data.nik,
+        npwp: data.npwp,
+        phoneNumber: data.phone_number,
+        occupation: data.occupation,
+        education: data.education,
+        maritalStatus: data.marital_status,
+        dependents: data.dependents,
+        hobbies: data.hobbies,
+      });
+      // Menghapus cache query profil lama agar diperbarui secara otomatis
+      queryClient.invalidateQueries({ queryKey: ['taxpayer_profile'] });
+    },
+  });
+}
