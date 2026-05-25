@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "declaration": false,
+    "incremental": false,
+    "isolatedModules": false,
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "outDir": ".test-build",
+    "sourceMap": false,
+    "target": "ES2022",
+    "tsBuildInfoFile": ".test-build/tsconfig.test.tsbuildinfo"
+  },
+  "include": [
+    "src/lib/apiAuth.ts",
+    "src/lib/securityHeaders.ts",
+    "src/lib/taxEngine.ts",
+    "src/lib/taxReportServer.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

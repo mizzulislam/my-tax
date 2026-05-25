@@ -135,8 +135,9 @@ export default function TransactionsPage() {
         throw error;
       }
       setTransactions(data || []);
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal memuat transaksi.';
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
@@ -204,8 +205,9 @@ export default function TransactionsPage() {
       setDescription('');
       fetchTransactions();
       setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal menyimpan transaksi.';
+      setErrorMsg(message);
     } finally {
       setSubmitting(false);
     }
@@ -224,8 +226,9 @@ export default function TransactionsPage() {
       setSuccessMsg('Transaksi berhasil dihapus.');
       fetchTransactions();
       setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal menghapus transaksi.';
+      setErrorMsg(message);
     }
   };
 
@@ -283,9 +286,12 @@ export default function TransactionsPage() {
           </p>
 
           <div className="relative">
-            <pre className="bg-slate-950/80 border border-slate-800 text-slate-300 text-xs p-5 rounded-2xl font-mono overflow-x-auto max-h-[300px] leading-relaxed shadow-inner">
-              {MIGRATION_SQL}
-            </pre>
+            <button
+              onClick={() => { navigator.clipboard.writeText(MIGRATION_SQL); const b = document.getElementById('copy-sql-txn'); if(b){b.textContent='✅ Tersalin!'; setTimeout(()=>{b.textContent='📋 Salin SQL'},2000);} }}
+              id="copy-sql-txn"
+              className="absolute top-3 right-3 z-10 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold rounded-lg transition-all shadow-lg uppercase tracking-wider"
+            >📋 Salin SQL</button>
+            <pre className="bg-slate-950/80 border border-slate-800 text-slate-300 text-xs p-5 rounded-2xl font-mono overflow-x-auto max-h-[300px] leading-relaxed shadow-inner whitespace-pre">{MIGRATION_SQL}</pre>
           </div>
 
           <button

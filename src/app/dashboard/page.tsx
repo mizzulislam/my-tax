@@ -3,10 +3,10 @@
 import { useFetchReports } from '@/hooks/useFetchReports';
 import DashboardStats from '@/components/DashboardStats';
 import TaxHistoryTable from '@/components/TaxHistoryTable';
-import TaxCalculatorForm from '@/components/TaxCalculatorForm';
-import TaxAssistantChat from '@/components/TaxAssistantChat';
+
 import TaxCalendar from '@/components/TaxCalendar';
 import TaxTrendChart from '@/components/TaxTrendChart';
+import AdvancedAnalyticsSection from '@/components/AdvancedAnalyticsSection';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -73,19 +73,16 @@ function DashboardContent() {
       {/* Visual Analytics Trend Chart */}
       <TaxTrendChart data={reportsData} />
 
-      {/* Grid: Tax History, Tax Calendar and Fast Simulation Form */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-        <div className="xl:col-span-2 space-y-8">
-          <TaxHistoryTable data={reportsData} />
-          <TaxCalendar />
-        </div>
-        <div className="xl:col-span-1 xl:sticky xl:top-24">
-          <TaxCalculatorForm />
-        </div>
+      <AdvancedAnalyticsSection reportsData={reportsData} />
+
+      {/* Sections: Tax History and Tax Calendar */}
+      <div className="space-y-8">
+        <TaxHistoryTable data={reportsData} />
+        <TaxCalendar />
       </div>
       
       {/* Floating Chat Assistant */}
-      <TaxAssistantChat />
+
 
     </div>
   );

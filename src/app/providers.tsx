@@ -1,9 +1,12 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 
 export default function Providers({ children }: { children: ReactNode }) {
+  const clearStore = useTaxpayerStore((state) => state.clearStore);
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -12,6 +15,19 @@ export default function Providers({ children }: { children: ReactNode }) {
       },
     },
   }));
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        clearStore();
+        queryClient.clear();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [clearStore, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -52,7 +52,7 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
           dependents: profile.dependents,
           hobbies: profile.hobbies,
           role: userRole, // Field role baru ditambahkan ke global store
-        } as any);
+        });
 
         if (!allowedRoles.includes(userRole)) {
           // Arahkan kembali ke /dashboard dengan menyertakan parameter error

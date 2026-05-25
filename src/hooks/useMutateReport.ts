@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { TaxReportInput } from '@/types/taxpayer';
-import { calculateProgressiveTax } from '@/lib/taxEngine';
+import { TaxReportInput, taxReportSchema } from '@/types/taxpayer';
 
 export interface MutateReportData extends TaxReportInput {
-  status?: 'draft' | 'submitted' | 'paid' | 'overdue';
-  taxPayable?: number;
+  status?: 'draft' | 'submitted';
+  ptkpStatus?: 'TK/0' | 'TK/1' | 'K/0' | 'K/1' | 'K/2' | 'K/3';
+  pensionContribution?: number;
 }
 
 export function useMutateReport() {
@@ -13,29 +13,48 @@ export function useMutateReport() {
 
   return useMutation({
     mutationFn: async (reportData: MutateReportData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
 
-      // Hitung nominal pajak terutang via taxEngine sebelum dikirim ke backend (gunakan yang dilempar dari Wizard jika ada)
-      const taxPayable = reportData.taxPayable !== undefined
-        ? reportData.taxPayable
-        : calculateProgressiveTax(reportData.grossIncome);
+      const parsed = taxReportSchema.safeParse({
+        taxYear: reportData.taxYear,
+        taxPeriod: reportData.taxPeriod,
+        grossIncome: reportData.grossIncome,
+      });
 
-      const { data, error } = await supabase
-        .from('tax_reports')
-        .insert({
-          user_id: user.id,
-          tax_year: reportData.taxYear,
-          tax_period: reportData.taxPeriod,
-          gross_income: reportData.grossIncome,
-          tax_payable: taxPayable,
-          status: reportData.status || 'draft',
-        })
-        .select()
-        .single();
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message || 'Data laporan pajak tidak valid.');
+      }
 
-      if (error) throw new Error(error.message);
-      return data;
+      const allowedStatus = ['draft', 'submitted'] as const;
+      const status = allowedStatus.includes(reportData.status as (typeof allowedStatus)[number])
+        ? reportData.status
+        : 'draft';
+
+      const response = await fetch('/api/tax-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          taxYear: parsed.data.taxYear,
+          taxPeriod: parsed.data.taxPeriod,
+          grossIncome: parsed.data.grossIncome,
+          status,
+          ptkpStatus: reportData.ptkpStatus || 'TK/0',
+          pensionContribution: reportData.pensionContribution || 0,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Gagal menyimpan laporan pajak.');
+      }
+
+      return payload.item;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tax_reports_list'] });

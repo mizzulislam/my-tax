@@ -1,0 +1,29 @@
+-- 1. Buat Tabel Baru public.what_if_scenarios
+CREATE TABLE IF NOT EXISTS public.what_if_scenarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    scenario_name TEXT NOT NULL,
+    base_gross_income NUMERIC(15,2) NOT NULL DEFAULT 0,
+    base_ptkp_status TEXT NOT NULL DEFAULT 'TK/0',
+    base_tax_result NUMERIC(15,2) DEFAULT 0,
+    sim_gross_income NUMERIC(15,2),
+    sim_ptkp_status TEXT,
+    sim_additional_income NUMERIC(15,2) DEFAULT 0,
+    sim_additional_deductions NUMERIC(15,2) DEFAULT 0,
+    sim_umkm_mode BOOLEAN DEFAULT false,
+    sim_umkm_omzet NUMERIC(15,2) DEFAULT 0,
+    sim_tax_result NUMERIC(15,2) DEFAULT 0,
+    tax_difference NUMERIC(15,2) DEFAULT 0,
+    savings_percentage NUMERIC(5,2) DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 2. Aktifkan RLS
+ALTER TABLE public.what_if_scenarios ENABLE ROW LEVEL SECURITY;
+
+-- 3. Definisikan Policy
+CREATE POLICY "User own scenarios SELECT" ON public.what_if_scenarios FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "User own scenarios INSERT" ON public.what_if_scenarios FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "User own scenarios UPDATE" ON public.what_if_scenarios FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "User own scenarios DELETE" ON public.what_if_scenarios FOR DELETE USING (auth.uid() = user_id);

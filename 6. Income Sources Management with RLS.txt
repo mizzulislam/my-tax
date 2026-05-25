@@ -1,0 +1,31 @@
+-- 1. Buat Tabel Baru public.income_sources
+CREATE TABLE IF NOT EXISTS public.income_sources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    source_name TEXT NOT NULL,
+    source_type TEXT NOT NULL CHECK (source_type IN (
+        'pekerjaan_tetap',
+        'pekerjaan_bebas',
+        'usaha',
+        'sewa',
+        'investasi',
+        'lainnya'
+    )),
+    annual_income NUMERIC(15,2) NOT NULL DEFAULT 0 CHECK (annual_income >= 0),
+    tax_year INT NOT NULL,
+    npwp_pemotong VARCHAR(16),
+    is_tax_withheld BOOLEAN DEFAULT false,
+    withheld_amount NUMERIC(15,2) DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 2. Aktifkan Row Level Security (RLS)
+ALTER TABLE public.income_sources ENABLE ROW LEVEL SECURITY;
+
+-- 3. Definisikan Kebijakan RLS (Policy)
+CREATE POLICY "User own income_sources SELECT" ON public.income_sources FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "User own income_sources INSERT" ON public.income_sources FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "User own income_sources UPDATE" ON public.income_sources FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "User own income_sources DELETE" ON public.income_sources FOR DELETE USING (auth.uid() = user_id);

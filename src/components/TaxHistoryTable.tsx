@@ -1,7 +1,12 @@
 import { TaxReportData } from '@/hooks/useFetchReports';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
+import { useCreateBillingCode } from '@/hooks/useBillingCodes';
+import { buildBillingVerificationPayload } from '@/lib/billingGenerator';
 
 export default function TaxHistoryTable({ data }: { data: TaxReportData[] }) {
+  const createBilling = useCreateBillingCode();
   
   const getStatusBadge = (status: TaxReportData['status']) => {
     const baseClass = "px-3 py-1.5 text-xs font-bold rounded-full tracking-wider uppercase inline-flex items-center gap-2 shadow-sm backdrop-blur-md";
@@ -19,117 +24,150 @@ export default function TaxHistoryTable({ data }: { data: TaxReportData[] }) {
     }
   };
 
-  const handleExportPDF = (report: TaxReportData) => {
+  const addDraftWatermark = (doc: jsPDF) => {
+    const pageCount = doc.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setTextColor(226, 232, 240);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(28);
+      doc.text('DRAF - BUKAN DOKUMEN RESMI DJP', 105, 150, {
+        align: 'center',
+        angle: 35,
+      });
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(8);
+      doc.text(`Tax Feyments App - Halaman ${page} dari ${pageCount}`, 15, 288);
+      doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')}`, 195, 288, { align: 'right' });
+    }
+  };
+
+  const handleExportPDF = async (report: TaxReportData) => {
     try {
       const doc = new jsPDF();
+      const verificationCode = `TF-${report.tax_year}-${report.tax_period}-${report.id.slice(0, 8).toUpperCase()}`;
+      const qrDataUrl = await QRCode.toDataURL(buildBillingVerificationPayload({
+        billingCode: verificationCode,
+        amount: report.tax_payable,
+        reportId: report.id,
+      }), { margin: 1, width: 160 });
       
-      // Header formal Kementerian/Sistem Pajak
       doc.setFillColor(15, 23, 42); // slate 900
-      doc.rect(0, 0, 210, 48, 'F');
+      doc.rect(0, 0, 210, 297, 'F');
       
-      // Aksen emas kemewahan
-      doc.setFillColor(234, 179, 8); // yellow 500
-      doc.rect(0, 48, 210, 2, 'F');
+      doc.setFillColor(37, 99, 235);
+      doc.rect(0, 0, 210, 6, 'F');
 
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
-      doc.text('TAX FEYMENTS APP', 15, 20);
+      doc.setFontSize(26);
+      doc.text('TAX FEYMENTS APP', 20, 44);
       
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(203, 213, 225); // slate 300
+      doc.text('Ringkasan Profesional Perhitungan PPh Orang Pribadi', 20, 54);
+      doc.text('Simulasi internal untuk pelaporan SPT, bukan bukti resmi DJP.', 20, 62);
+
+      doc.setFillColor(30, 41, 59);
+      doc.roundedRect(20, 92, 170, 70, 4, 4, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Identitas Dokumen', 30, 110);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(203, 213, 225);
+      doc.text(`ID Laporan: ${report.id}`, 30, 124);
+      doc.text(`Tahun/Masa Pajak: ${report.tax_year} / ${report.tax_period}`, 30, 134);
+      doc.text(`Status: ${report.status.toUpperCase()}`, 30, 144);
+      doc.text(`Kode Verifikasi: ${verificationCode}`, 30, 154);
+
+      doc.addImage(qrDataUrl, 'PNG', 154, 112, 26, 26);
+      doc.setFontSize(10);
+      doc.setTextColor(147, 197, 253);
+      doc.text('QR Verifikasi', 152, 146);
+
+      doc.setTextColor(226, 232, 240);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text(`PPh Terutang: Rp ${Number(report.tax_payable).toLocaleString('id-ID')}`, 20, 204);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Penghasilan Bruto: Rp ${Number(report.gross_income).toLocaleString('id-ID')}`, 20, 214);
+      doc.text(`Tanggal arsip: ${new Date(report.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`, 20, 224);
+
+      doc.addPage();
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('Detail Perhitungan Pajak', 15, 24);
+
+      autoTable(doc, {
+        startY: 36,
+        head: [['Komponen', 'Nilai', 'Catatan']],
+        body: [
+          ['Penghasilan Bruto', `Rp ${Number(report.gross_income).toLocaleString('id-ID')}`, 'Total penghasilan yang menjadi dasar simulasi.'],
+          ['PPh Terutang', `Rp ${Number(report.tax_payable).toLocaleString('id-ID')}`, 'Hasil perhitungan engine aplikasi.'],
+          ['Tarif Efektif', `${report.gross_income > 0 ? ((report.tax_payable / report.gross_income) * 100).toFixed(2) : '0.00'}%`, 'PPh terutang dibanding penghasilan bruto.'],
+          ['Status Laporan', report.status.toUpperCase(), 'Status internal aplikasi.'],
+        ],
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+        alternateRowStyles: { fillColor: [241, 245, 249] },
+      });
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Catatan Kepatuhan', 15, 112);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(203, 213, 225); // slate 300
-      doc.text('DRAF RESMI RINGKASAN PERHITUNGAN PPh WAJIB PAJAK', 15, 28);
-      doc.text('KEMENTERIAN KEUANGAN REPUBLIK INDONESIA - ACUAN UU HPP 2021', 15, 34);
-      doc.text('GENERATED VIA ENCRYPTED DIGITAL SIGNATURE / FR-18', 15, 40);
-
-      // Divider Line
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.5);
-      doc.line(15, 60, 195, 60);
-
-      // Section 1: Detail Pelapor & Dokumen
-      doc.setTextColor(15, 23, 42);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text('INFORMASI LAPORAN PERPAJAKAN', 15, 70);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
       doc.setTextColor(71, 85, 105);
+      doc.text([
+        '1. Simpan bukti potong, dokumen penghasilan, dan bukti pembayaran untuk arsip SPT.',
+        '2. Pastikan angka final sesuai dokumen resmi pemberi kerja atau pembukuan usaha.',
+        '3. Dokumen ini adalah ringkasan aplikasi, bukan pengganti BPE, SPT, atau kode billing DJP.',
+      ], 15, 122);
 
-      const startY = 82;
-      const lineHeight = 8;
-      
-      const info = [
-        ['ID Dokumen Laporan:', report.id],
-        ['Tahun Pajak:', String(report.tax_year)],
-        ['Masa Pajak:', report.tax_period],
-        ['Tanggal Pengajuan:', new Date(report.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })],
-        ['Status Dokumen:', report.status.toUpperCase()]
-      ];
-      
-      info.forEach((item, idx) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(item[0], 15, startY + idx * lineHeight);
-        doc.setFont('helvetica', 'normal');
-        doc.text(item[1], 75, startY + idx * lineHeight);
-      });
-
-      // Divider Line 2
-      doc.line(15, 130, 195, 130);
-
-      // Section 2: Ringkasan Hitung Keuangan
+      doc.addPage();
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(16);
       doc.setTextColor(15, 23, 42);
-      doc.text('RINGKASAN PERHITUNGAN KEUANGAN (UU HPP)', 15, 140);
+      doc.text('Visual Ringkasan dan QR', 15, 24);
 
-      doc.setFont('helvetica', 'normal');
+      const taxRatio = report.gross_income > 0 ? Math.min(report.tax_payable / report.gross_income, 1) : 0;
+      doc.setFillColor(226, 232, 240);
+      doc.roundedRect(20, 52, 170, 18, 3, 3, 'F');
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(20, 52, 170 * taxRatio, 18, 3, 3, 'F');
       doc.setFontSize(10);
-      doc.setTextColor(71, 85, 105);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Rasio PPh terhadap bruto: ${(taxRatio * 100).toFixed(2)}%`, 20, 82);
 
-      const calcData = [
-        ['Penghasilan Bruto Setahun:', `Rp ${Number(report.gross_income).toLocaleString('id-ID')}`],
-        ['Total PPh Terutang Setahun:', `Rp ${Number(report.tax_payable).toLocaleString('id-ID')}`],
-        ['Tarif Progresif Efektif:', 'Diuji secara berlapis sesuai regulasi UU HPP 2021']
-      ];
+      doc.addImage(qrDataUrl, 'PNG', 82, 102, 46, 46);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(37, 99, 235);
+      doc.text(verificationCode, 105, 158, { align: 'center' });
 
-      calcData.forEach((item, idx) => {
-        doc.setFont('helvetica', 'bold');
-        if (item[0].includes('Total PPh')) {
-          // Highlight total PPh
-          doc.setFillColor(241, 245, 249);
-          doc.rect(13, 150 + idx * 10 - 4, 184, 8.5, 'F');
-          doc.setTextColor(29, 78, 216); // blue
-        } else {
-          doc.setTextColor(51, 65, 85);
-        }
-        doc.text(item[0], 15, 150 + idx * 10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(item[1], 75, 150 + idx * 10);
-      });
-
-      // QR Code Box Placeholder
-      doc.setDrawColor(203, 213, 225);
-      doc.rect(155, 180, 40, 40);
-      doc.setFontSize(7);
-      doc.setTextColor(148, 163, 184);
-      doc.text('TANDA TANGAN', 158, 224);
-      doc.text('DIGITAL SAH', 158, 228);
-
-      // Catatan Kaki Legalitas
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(8);
-      doc.text('Catatan Penting:', 15, 255);
-      doc.text('- Laporan ini digenerate secara resmi melalui enkripsi digital server klien Tax Feyments App.', 15, 261);
-      doc.text('- Hasil di atas valid dan mengikat secara hukum perpajakan harmonisasi peraturan baru (UU HPP).', 15, 267);
-      doc.text('- Lembar ringkasan ini dapat dilampirkan sebagai berkas pendukung pelaporan SPT resmi.', 15, 273);
+      addDraftWatermark(doc);
 
       doc.save(`Ringkasan_Pajak_${report.tax_year}_${report.tax_period}.pdf`);
-    } catch (err: any) {
-      alert('Gagal mengekspor PDF: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan tidak dikenal.';
+      alert('Gagal mengekspor PDF: ' + message);
     }
+  };
+
+  const handleCreateBilling = (report: TaxReportData) => {
+    createBilling.mutate(report, {
+      onSuccess: (billing) => {
+        alert(`Kode billing berhasil dibuat: ${billing.billingCode}`);
+      },
+      onError: (error) => {
+        alert(`Gagal membuat billing: ${error.message}`);
+      },
+    });
   };
 
   return (
@@ -194,14 +232,26 @@ export default function TaxHistoryTable({ data }: { data: TaxReportData[] }) {
                     </span>
                   </td>
                   <td className="p-6 text-right">
-                    <button
-                      onClick={() => handleExportPDF(report)}
-                      className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 rounded-xl transition-all border border-blue-500/20 inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]"
-                      title="Unduh Ringkasan Pajak"
-                    >
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                      Unduh PDF
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      {report.status === 'submitted' && (
+                        <button
+                          onClick={() => handleCreateBilling(report)}
+                          disabled={createBilling.isPending}
+                          className="p-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 rounded-xl transition-all border border-emerald-500/20 inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider disabled:opacity-50"
+                          title="Buat Kode Billing"
+                        >
+                          Billing
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleExportPDF(report)}
+                        className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 rounded-xl transition-all border border-blue-500/20 inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                        title="Unduh Ringkasan Pajak"
+                      >
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        PDF
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

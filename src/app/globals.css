@@ -18,11 +18,211 @@
       transform: translateX(100%);
     }
   }
+
+  --animate-charge-fill: charge-fill 1.6s ease-in-out infinite;
+
+  @keyframes charge-fill {
+    0% {
+      transform: translateY(105%);
+      opacity: 0.35;
+    }
+    45% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-105%);
+      opacity: 0.35;
+    }
+  }
+
+  --animate-liquid-fill: liquid-fill 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  --animate-liquid-pop: liquid-pop 420ms ease-out both;
+
+  @keyframes liquid-fill {
+    0% {
+      transform: translate3d(0, 101%, 0);
+      opacity: 0.85;
+    }
+    100% {
+      transform: translate3d(0, 0, 0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes liquid-wave {
+    0% {
+      transform: translate3d(-18%, 0, 0) scaleX(1.35);
+      opacity: 0.18;
+    }
+    70% {
+      transform: translate3d(10%, 0, 0) scaleX(1.15);
+      opacity: 0.34;
+    }
+    100% {
+      transform: translate3d(0, 0, 0) scaleX(1);
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes liquid-shimmer {
+    0% {
+      transform: translate3d(-120%, 0, 0);
+      opacity: 0;
+    }
+    35% {
+      opacity: 0.32;
+    }
+    72% {
+      opacity: 0.18;
+    }
+    100% {
+      transform: translate3d(120%, 0, 0);
+      opacity: 0;
+    }
+  }
+
+  @keyframes liquid-pop {
+    0% {
+      transform: scale(0.65);
+      opacity: 0.45;
+    }
+    70% {
+      transform: scale(1.22);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@keyframes tax-chip-border-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (max-width: 1279px) {
+  .tax-type-chip {
+    isolation: isolate;
+  }
+
+  .tax-type-chip > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tax-type-chip-active::before,
+  .tax-type-chip-active::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .tax-type-chip-active::before {
+    inset: -120%;
+    z-index: 0;
+    background: conic-gradient(
+      from 0deg,
+      color-mix(in srgb, var(--tax-chip-glow-a, #60a5fa) 12%, transparent),
+      var(--tax-chip-glow-a, #60a5fa),
+      var(--tax-chip-glow-b, #3b82f6),
+      var(--tax-chip-glow-c, #60a5fa),
+      color-mix(in srgb, var(--tax-chip-glow-a, #60a5fa) 12%, transparent)
+    );
+    animation: tax-chip-border-spin 3.6s linear infinite;
+  }
+
+  .tax-type-chip-active::after {
+    inset: 1px;
+    z-index: 0;
+    border-radius: 0.7rem;
+    background: rgba(2, 6, 23, 0.94);
+  }
+
+  .tax-type-chip-active[data-tax-tone="pph21"] {
+    --tax-chip-glow-a: #22d3ee;
+    --tax-chip-glow-b: #3b82f6;
+    --tax-chip-glow-c: #38bdf8;
+  }
+
+  .tax-type-chip-active[data-tax-tone="ppn"] {
+    --tax-chip-glow-a: #60a5fa;
+    --tax-chip-glow-b: #6366f1;
+    --tax-chip-glow-c: #818cf8;
+  }
+
+  .tax-type-chip-active[data-tax-tone="ppnbm"] {
+    --tax-chip-glow-a: #fb7185;
+    --tax-chip-glow-b: #60a5fa;
+    --tax-chip-glow-c: #f472b6;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pph23"] {
+    --tax-chip-glow-a: #38bdf8;
+    --tax-chip-glow-b: #34d399;
+    --tax-chip-glow-c: #22d3ee;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pphUnifikasi"] {
+    --tax-chip-glow-a: #22d3ee;
+    --tax-chip-glow-b: #a78bfa;
+    --tax-chip-glow-c: #818cf8;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pphFinal"] {
+    --tax-chip-glow-a: #fbbf24;
+    --tax-chip-glow-b: #60a5fa;
+    --tax-chip-glow-c: #f59e0b;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pph26"] {
+    --tax-chip-glow-a: #a5b4fc;
+    --tax-chip-glow-b: #34d399;
+    --tax-chip-glow-c: #60a5fa;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pphBadan"] {
+    --tax-chip-glow-a: #8b5cf6;
+    --tax-chip-glow-b: #38bdf8;
+    --tax-chip-glow-c: #a78bfa;
+  }
+
+  .tax-type-chip-active[data-tax-tone="bphtb"] {
+    --tax-chip-glow-a: #34d399;
+    --tax-chip-glow-b: #60a5fa;
+    --tax-chip-glow-c: #2dd4bf;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pbbP2"] {
+    --tax-chip-glow-a: #5eead4;
+    --tax-chip-glow-b: #60a5fa;
+    --tax-chip-glow-c: #22d3ee;
+  }
+
+  .tax-type-chip-active[data-tax-tone="pajakDaerah"] {
+    --tax-chip-glow-a: #bef264;
+    --tax-chip-glow-b: #22d3ee;
+    --tax-chip-glow-c: #34d399;
+  }
+
+  .tax-type-chip-active[data-tax-tone="sanksiPajak"] {
+    --tax-chip-glow-a: #fca5a5;
+    --tax-chip-glow-b: #fcd34d;
+    --tax-chip-glow-c: #fb7185;
+  }
+
+  .tax-type-chip-active[data-tax-tone="beaMeterai"] {
+    --tax-chip-glow-a: #cbd5e1;
+    --tax-chip-glow-b: #60a5fa;
+    --tax-chip-glow-c: #94a3b8;
+  }
 }
 
 /* ==========================================
