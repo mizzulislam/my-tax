@@ -71,6 +71,7 @@ const TOUR_STEPS: Step[] = [
 export default function TourGuide() {
   const [run, setRun] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [steps, setSteps] = useState<Step[]>(TOUR_STEPS);
 
   useEffect(() => {
     setIsMounted(true);
@@ -80,7 +81,12 @@ export default function TourGuide() {
     // Memberikan sedikit delay sebelum tour berjalan agar UI sudah render sempurna
     if (!hasSeenTour) {
       const timer = setTimeout(() => {
-        setRun(true);
+        const availableSteps = TOUR_STEPS.filter((step) => {
+          if (step.target === 'body') return true;
+          return typeof step.target === 'string' && Boolean(document.querySelector(step.target));
+        });
+        setSteps(availableSteps);
+        setRun(availableSteps.length > 0);
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -99,7 +105,7 @@ export default function TourGuide() {
 
   return (
     <Joyride
-      steps={TOUR_STEPS}
+      steps={steps}
       run={run}
       continuous
       scrollToFirstStep

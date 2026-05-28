@@ -1,46 +1,36 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { decrypt } from '@/lib/encryption';
+import { NextRequest, NextResponse } from 'next/server';
+import { insertAuditLog, requireAdmin } from '@/lib/adminServer';
 
-export async function POST(request: Request) {
+const DISABLED_MESSAGE =
+  'Fitur lihat data lengkap admin sementara dinonaktifkan sampai consent pengguna dan audit trail siap.';
+
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   try {
-    const { encryptedValue, fieldType, targetUserId } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const fieldType = typeof body.fieldType === 'string' ? body.fieldType : 'unknown';
+    const targetUserId = typeof body.targetUserId === 'string' ? body.targetUserId : null;
 
-    // 1. Verifikasi Authentication
-    const authHeader = request.headers.get('Authorization');
-    // Di aplikasi nyata, kita akan periksa auth token ini
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    // 2. Verifikasi Otorisasi (Hanya Admin)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const { data: adminProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (adminProfile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
-    }
-
-    // 3. Dekripsi
-    const plainText = decrypt(encryptedValue);
-
-    // 4. Catat ke Audit Log
-    await supabase.from('audit_logs').insert({
-      actor_id: user.id,
-      action: `VIEW_ENCRYPTED_${fieldType.toUpperCase()}`,
-      target_user_id: targetUserId,
+    await insertAuditLog(auth.adminClient, {
+      actorId: auth.actor.id,
+      actorEmail: auth.actor.email,
+      action: 'SENSITIVE_FIELD_REVEAL_DISABLED',
+      targetTable: 'profiles',
+      targetId: targetUserId,
       severity: 'warning',
-      details: { timestamp: new Date().toISOString() }
+      details: { fieldType },
+      req: request,
     });
 
-    return NextResponse.json({ plainText });
+    return NextResponse.json({ error: DISABLED_MESSAGE }, { status: 423 });
 
-  } catch (error: any) {
-    console.error('Decryption error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Sensitive field reveal audit error:', error);
+    return NextResponse.json({ error: DISABLED_MESSAGE }, { status: 423 });
   }
 }

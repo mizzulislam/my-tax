@@ -1,12 +1,18 @@
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { assetSchema, AssetInput } from '@/types/taxpayer';
 import { useMutateAsset } from '@/hooks/useAssets';
 import { useEffect } from 'react';
 import Tooltip from './Tooltip';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
+const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
+const parseFormattedNumber = (value: string) => {
+  const normalized = value.replace(/[^\d]/g, '');
+  return normalized ? Number(normalized) : 0;
+};
 interface AssetFormProps {
   editAsset?: { id: string } & AssetInput;
   onSuccess?: () => void;
@@ -92,8 +98,8 @@ export default function AssetForm({
   };
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/30 via-indigo-500/5 to-transparent opacity-40"></div>
+    <div className="relative p-[1px] rounded-3xl group shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/30 via-indigo-500/5 to-transparent opacity-40 rounded-3xl"></div>
       
       <div className="relative bg-slate-900/85 backdrop-blur-2xl p-6 md:p-8 rounded-[23px] space-y-6">
         <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-[40px] rounded-full pointer-events-none"></div>
@@ -115,8 +121,8 @@ export default function AssetForm({
             </label>
             <input
               {...register('assetName')}
-              placeholder="Contoh: Rumah Tinggal, Deposito Bank Syariah"
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
+              placeholder="Contoh: Rumah Tinggal, Deposito BRI, dsb."
+              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
             />
             {errors.assetName && (
               <p className="text-xs text-red-400 font-medium">{errors.assetName.message}</p>
@@ -129,19 +135,27 @@ export default function AssetForm({
                 Kategori Harta
                 <Tooltip content="Pengelompokan jenis aset sesuai standar formulir SPT DJP." />
               </label>
-              <select
-                {...register('assetType')}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all appearance-none"
-              >
-                <option value="tanah_bangunan">Tanah & Bangunan</option>
-                <option value="kendaraan">Kendaraan (Mobil/Motor)</option>
-                <option value="deposito_tabungan">Simpanan Bank / Deposito</option>
-                <option value="saham_obligasi">Surat Berharga / Investasi</option>
-                <option value="piutang">Piutang Dana</option>
-                <option value="perhiasan">Logam Mulia / Emas / Perhiasan</option>
-                <option value="peralatan">Peralatan Bernilai (Elektronik)</option>
-                <option value="lainnya">Aset Lain-lain</option>
-              </select>
+              <Controller
+                name="assetType"
+                control={control}
+                render={({ field }) => (
+                  <ModernSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    className="z-50"
+                    options={[
+                      { value: 'tanah_bangunan', label: 'Tanah & Bangunan' },
+                      { value: 'kendaraan', label: 'Kendaraan (Mobil/Motor)' },
+                      { value: 'deposito_tabungan', label: 'Simpanan Bank / Deposito' },
+                      { value: 'saham_obligasi', label: 'Surat Berharga / Investasi' },
+                      { value: 'piutang', label: 'Piutang Dana' },
+                      { value: 'perhiasan', label: 'Logam Mulia / Emas / Perhiasan' },
+                      { value: 'peralatan', label: 'Peralatan Bernilai (Elektronik)' },
+                      { value: 'lainnya', label: 'Aset Lain-lain' },
+                    ]}
+                  />
+                )}
+              />
               {errors.assetType && (
                 <p className="text-xs text-red-400 font-medium">{errors.assetType.message}</p>
               )}
@@ -155,7 +169,7 @@ export default function AssetForm({
               <input
                 type="number"
                 {...register('taxYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
               />
               {errors.taxYear && (
                 <p className="text-xs text-red-400 font-medium">{errors.taxYear.message}</p>
@@ -172,7 +186,7 @@ export default function AssetForm({
               <input
                 type="number"
                 {...register('acquisitionYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
               />
               {errors.acquisitionYear && (
                 <p className="text-xs text-red-400 font-medium">{errors.acquisitionYear.message}</p>
@@ -186,11 +200,19 @@ export default function AssetForm({
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                <input
-                  type="number"
-                  {...register('acquisitionValue', { valueAsNumber: true })}
-                  placeholder="0"
-                  className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                <Controller
+                  name="acquisitionValue"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberInput(field.value)}
+                      onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
+                      placeholder="0"
+                      className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                    />
+                  )}
                 />
               </div>
               {errors.acquisitionValue && (
@@ -206,11 +228,19 @@ export default function AssetForm({
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-              <input
-                type="number"
-                {...register('currentValue', { valueAsNumber: true })}
-                placeholder="0"
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+              <Controller
+                name="currentValue"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumberInput(field.value || 0)}
+                    onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                  />
+                )}
               />
             </div>
             {errors.currentValue && (
@@ -222,9 +252,9 @@ export default function AssetForm({
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Keterangan / Nomor Dokumen (Opsional)</label>
             <textarea
               {...register('description')}
-              placeholder="Contoh: Nomor Plat B 1234 ABC, Nomor Sertifikat Tanah HM.8821, dll..."
+              placeholder="Tuliskan keterangan tambahan atau detail aset..."
               rows={2}
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none font-medium"
+              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none font-medium"
             />
           </div>
 

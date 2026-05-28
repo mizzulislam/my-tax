@@ -68,7 +68,7 @@ export const taxReportSchema = z.object({
     .number()
     .int()
     .min(2020, { message: "Tahun pajak minimal 2020." })
-    .max(new Date().getFullYear(), { message: "Tahun pajak tidak boleh melebihi tahun berjalan." }),
+    .max(2100, { message: "Tahun pajak maksimal 2100." }),
   taxPeriod: z
     .enum(taxPeriodValues, { message: "Masa pajak harus berada di antara '01' sampai '12'." }),
   grossIncome: z
@@ -86,12 +86,12 @@ export const incomeSourceSchema = z.object({
     message: "Jenis sumber harus dipilih dari opsi yang valid.",
   }),
   annualIncome: z.number().finite().min(0, { message: "Penghasilan bruto tidak boleh negatif." }).max(maxFinancialAmount),
-  taxYear: z.number().int().min(2020, { message: "Tahun pajak minimal 2020." }).max(new Date().getFullYear()),
-  npwpPemotong: z.string().regex(numericRegex, { message: "NPWP pemotong hanya boleh angka." }).refine((val) => val.length === 15 || val.length === 16, { message: "NPWP pemotong harus 15 atau 16 digit." }).optional().nullable(),
+  taxYear: z.number().int().min(2020, { message: "Tahun pajak minimal 2020." }).max(2100),
+  npwpPemotong: z.string().optional().nullable().refine(val => !val || (numericRegex.test(val) && (val.length === 15 || val.length === 16)), { message: "NPWP pemotong harus 15 atau 16 digit angka." }),
   isTaxWithheld: z.boolean().default(false),
   withheldAmount: z.number().finite().min(0, { message: "Jumlah PPh dipotong tidak boleh negatif." }).max(maxFinancialAmount).default(0),
   notes: z.string().optional().nullable(),
-  registrationYearForUmkm: z.number().int().min(1950, { message: "Tahun registrasi tidak valid" }).max(new Date().getFullYear()).optional().nullable(),
+  registrationYearForUmkm: z.number().int().min(1950, { message: "Tahun registrasi tidak valid" }).max(2100).optional().nullable(),
 });
 
 export type IncomeSourceInput = z.infer<typeof incomeSourceSchema>;
@@ -111,7 +111,7 @@ export const assetSchema = z.object({
   acquisitionValue: z.number().finite().min(0, { message: "Nilai perolehan tidak boleh negatif." }).max(maxFinancialAmount),
   currentValue: z.number().finite().min(0, { message: "Nilai perkiraan saat ini tidak boleh negatif." }).max(maxFinancialAmount).optional().nullable(),
   description: z.string().optional().nullable(),
-  taxYear: z.number().int().min(2020, { message: "Tahun pajak pelaporan minimal 2020." }).max(new Date().getFullYear()),
+  taxYear: z.number().int().min(2020, { message: "Tahun pajak pelaporan minimal 2020." }).max(2100),
 });
 
 export type AssetInput = z.infer<typeof assetSchema>;
@@ -271,7 +271,7 @@ export interface CmsTaxModule {
 
 export type CmsTaxModuleInput = Omit<CmsTaxModule, 'id' | 'createdAt' | 'updatedAt'>;
 
-export type BillingStatus = 'active' | 'paid' | 'expired' | 'cancelled';
+export type BillingStatus = 'draft' | 'reviewed' | 'exported' | 'cancelled';
 
 export interface BillingCode {
   id: string;

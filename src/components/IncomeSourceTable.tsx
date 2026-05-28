@@ -71,12 +71,12 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              <th className="py-4 px-6">Sumber Penghasilan</th>
-              <th className="py-4 px-6">Kategori</th>
-              <th className="py-4 px-6">Penghasilan Setahun</th>
-              <th className="py-4 px-6">Kredit Pajak (Dipotong)</th>
-              <th className="py-4 px-6 text-right">Aksi</th>
+            <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider divide-x divide-slate-800/30">
+              <th className="py-4 px-6 text-center">Sumber Penghasilan</th>
+              <th className="py-4 px-6 text-center">Kategori</th>
+              <th className="py-4 px-6 text-center">Penghasilan Setahun</th>
+              <th className="py-4 px-6 text-center">Kredit Pajak (Dipotong)</th>
+              <th className="py-4 px-6 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80 text-xs font-medium">
@@ -101,7 +101,7 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
               </tr>
             ) : (
               sources.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-900/20 transition-all duration-150">
+                <tr key={s.id} className="hover:bg-slate-900/20 transition-all duration-150 divide-x divide-slate-800/30">
                   <td className="py-4.5 px-6">
                     <span className="font-bold text-white block mb-0.5">{s.sourceName}</span>
                     {s.npwpPemotong ? (

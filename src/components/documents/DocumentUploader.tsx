@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useUploadDocument } from '@/hooks/useDocuments';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
 interface DocumentUploaderProps {
   onSuccess?: () => void;
@@ -153,16 +154,12 @@ export default function DocumentUploader({ onSuccess, onCancel, activeTaxYear }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Dokumen</label>
-              <select
+              <ModernSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                disabled={isPending}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all appearance-none"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
+                onChange={setCategory}
+                className="z-50"
+                options={CATEGORIES.map(c => ({ value: c.id, label: c.label }))}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tahun Pajak</label>
@@ -171,7 +168,7 @@ export default function DocumentUploader({ onSuccess, onCancel, activeTaxYear }:
                 value={taxYear}
                 onChange={(e) => setTaxYear(Number(e.target.value))}
                 disabled={isPending}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all font-mono"
+                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all font-mono"
               />
             </div>
           </div>
@@ -184,7 +181,7 @@ export default function DocumentUploader({ onSuccess, onCancel, activeTaxYear }:
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Contoh: Bukti Potong PPh 21 PT ABC Jan-Des 2025"
               disabled={isPending}
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
             />
           </div>
 

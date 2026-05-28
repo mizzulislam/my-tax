@@ -79,13 +79,13 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              <th className="py-4 px-6">Nama Harta / Aset</th>
-              <th className="py-4 px-6">Kategori</th>
-              <th className="py-4 px-6 font-mono">Tahun Perolehan</th>
-              <th className="py-4 px-6">Nilai Perolehan</th>
-              <th className="py-4 px-6">Nilai Pasar Saat Ini</th>
-              <th className="py-4 px-6 text-right">Aksi</th>
+            <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider divide-x divide-slate-800/30">
+              <th className="py-4 px-6 text-center">Nama Harta / Aset</th>
+              <th className="py-4 px-6 text-center">Kategori</th>
+              <th className="py-4 px-6 font-mono text-center">Tahun Perolehan</th>
+              <th className="py-4 px-6 text-center">Nilai Perolehan</th>
+              <th className="py-4 px-6 text-center">Nilai Pasar Saat Ini</th>
+              <th className="py-4 px-6 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80 text-xs font-medium">
@@ -110,7 +110,7 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
               </tr>
             ) : (
               assets.map((a) => (
-                <tr key={a.id} className="hover:bg-slate-900/20 transition-all duration-150">
+                <tr key={a.id} className="hover:bg-slate-900/20 transition-all duration-150 divide-x divide-slate-800/30">
                   <td className="py-4.5 px-6">
                     <span className="font-bold text-white block mb-0.5">{a.assetName}</span>
                     {a.description ? (

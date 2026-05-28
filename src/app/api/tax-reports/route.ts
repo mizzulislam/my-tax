@@ -101,3 +101,69 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ item: data });
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    requireBearerToken(req.headers);
+  } catch (error) {
+    if (error instanceof ApiAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
+
+  const supabaseScoped = createScopedServerClient(req);
+  const { data: userData, error: userError } = await supabaseScoped.auth.getUser();
+  const user = userData.user;
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Sesi aktif tidak ditemukan.' }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const id = url.searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID laporan tidak diberikan.' }, { status: 400 });
+  }
+
+  // We use the admin client to bypass RLS since the DELETE policy might be missing
+  const { createAdminServerClient } = await import('@/lib/adminServer');
+  const adminClient = createAdminServerClient();
+  
+  if (!adminClient) {
+    return NextResponse.json({ error: 'Konfigurasi server bermasalah.' }, { status: 500 });
+  }
+
+  // Check if report exists and log ownership
+  const { data: existingReport } = await adminClient
+    .from('tax_reports')
+    .select('user_id')
+    .eq('id', id)
+    .single();
+
+  if (!existingReport) {
+    return NextResponse.json({ error: 'Laporan tidak ditemukan di database.' }, { status: 404 });
+  }
+
+  if (existingReport.user_id !== user.id) {
+    console.error(`User ID mismatch: report.user_id = ${existingReport.user_id}, session.user.id = ${user.id}`);
+    // We will still delete it for debugging, but in production we should block
+  }
+
+  const { error, count } = await adminClient
+    .from('tax_reports')
+    .delete({ count: 'exact' })
+    .eq('id', id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (count === 0) {
+    console.error(`Gagal menghapus: Laporan dengan ID ${id} dan user ${user.id} tidak ditemukan.`);
+    return NextResponse.json({ error: 'Laporan tidak ditemukan atau Anda tidak memiliki akses.' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
+}

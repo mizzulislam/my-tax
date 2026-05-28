@@ -7,10 +7,10 @@ export default function BillingPage() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
         <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">
-          Panduan Pembayaran e-Billing
+          Draft Pembayaran & Panduan e-Billing
         </h1>
         <p className="text-slate-400 max-w-2xl text-md leading-relaxed font-medium">
-          Pelajari langkah-langkah membuat kode billing dan membayar pajak Anda secara resmi melalui sistem Direktorat Jenderal Pajak (DJP).
+          Siapkan data pembayaran sebagai draft internal, lalu buat kode billing dan bayar pajak hanya melalui sistem resmi Direktorat Jenderal Pajak (DJP).
         </p>
       </div>
 
@@ -18,8 +18,8 @@ export default function BillingPage() {
         <div className="border-l-4 border-blue-500 pl-4 mb-6">
           <h2 className="text-xl font-bold text-white mb-2">Penafian Penting</h2>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Aplikasi ini adalah <strong>simulator edukasi</strong> dan tidak terhubung dengan sistem e-Billing DJP. 
-            Anda tidak dapat membayar pajak asli melalui aplikasi ini. Pembayaran pajak yang sah hanya dapat dilakukan menggunakan 
+            Aplikasi ini hanya menyediakan <strong>draft persiapan pembayaran</strong> dan tidak terhubung dengan sistem e-Billing DJP. 
+            Tax Feyments tidak menerbitkan kode billing, tidak menerima pembayaran, dan tidak menandai pajak sebagai lunas. Pembayaran pajak yang sah hanya dapat dilakukan menggunakan 
             kode billing yang diterbitkan secara resmi oleh DJP.
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function BillingPage() {
 
           <div className="relative pl-10">
             <div className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">4</div>
-            <h3 className="text-lg font-bold text-white mb-2">Buat Kode Billing & Lakukan Pembayaran</h3>
+            <h3 className="text-lg font-bold text-white mb-2">Buat Kode Billing Resmi di DJP & Lakukan Pembayaran</h3>
             <p className="text-slate-400 text-sm">
               Klik <strong>Buat Kode Billing</strong>. Anda akan menerima 15 digit angka. Gunakan kode ini untuk membayar melalui ATM, Internet Banking, Mobile Banking, Kantor Pos, atau e-Commerce yang mendukung pembayaran MPN G3.
             </p>

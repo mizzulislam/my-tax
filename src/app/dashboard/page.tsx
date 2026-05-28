@@ -2,6 +2,7 @@
 
 import { useFetchReports } from '@/hooks/useFetchReports';
 import DashboardStats from '@/components/DashboardStats';
+import ReadinessPanel from '@/components/dashboard/ReadinessPanel';
 import TaxHistoryTable from '@/components/TaxHistoryTable';
 
 import TaxCalendar from '@/components/TaxCalendar';
@@ -96,6 +97,7 @@ function DashboardContent() {
       <div className="mt-4 animate-in fade-in zoom-in-95 duration-300">
         {activeTab === 'overview' && (
           <div className="space-y-6 md:space-y-8">
+            <ReadinessPanel reports={reportsData} />
             <DashboardStats data={reportsData} />
             <TaxTrendChart data={reportsData} />
             <TaxHistoryTable 
@@ -140,4 +142,3 @@ export default function DashboardPage() {
     </Suspense>
   );
 }
-

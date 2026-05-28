@@ -1,6 +1,7 @@
 'use client';
 
 import { WhatIfScenarioInput } from '@/types/taxpayer';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
 interface ScenarioBuilderProps {
   value: Partial<WhatIfScenarioInput>;
@@ -37,20 +38,21 @@ export default function ScenarioBuilder({ value, onChange }: ScenarioBuilderProp
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Simulasi Status PTKP</label>
-            <select
+            <ModernSelect
               value={value.simPtkpStatus || value.basePtkpStatus || 'TK/0'}
-              onChange={(e) => handleChange('simPtkpStatus', e.target.value)}
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none transition-all appearance-none"
-            >
-              <option value="TK/0">TK/0 (Tidak Kawin, 0 Tanggungan)</option>
-              <option value="TK/1">TK/1 (Tidak Kawin, 1 Tanggungan)</option>
-              <option value="TK/2">TK/2 (Tidak Kawin, 2 Tanggungan)</option>
-              <option value="TK/3">TK/3 (Tidak Kawin, 3 Tanggungan)</option>
-              <option value="K/0">K/0 (Kawin, 0 Tanggungan)</option>
-              <option value="K/1">K/1 (Kawin, 1 Tanggungan)</option>
-              <option value="K/2">K/2 (Kawin, 2 Tanggungan)</option>
-              <option value="K/3">K/3 (Kawin, 3 Tanggungan)</option>
-            </select>
+              onChange={(val) => handleChange('simPtkpStatus', val)}
+              className="z-50"
+              options={[
+                { value: 'TK/0', label: 'TK/0 (Tidak Kawin, 0 Tanggungan)' },
+                { value: 'TK/1', label: 'TK/1 (Tidak Kawin, 1 Tanggungan)' },
+                { value: 'TK/2', label: 'TK/2 (Tidak Kawin, 2 Tanggungan)' },
+                { value: 'TK/3', label: 'TK/3 (Tidak Kawin, 3 Tanggungan)' },
+                { value: 'K/0', label: 'K/0 (Kawin, 0 Tanggungan)' },
+                { value: 'K/1', label: 'K/1 (Kawin, 1 Tanggungan)' },
+                { value: 'K/2', label: 'K/2 (Kawin, 2 Tanggungan)' },
+                { value: 'K/3', label: 'K/3 (Kawin, 3 Tanggungan)' },
+              ]}
+            />
           </div>
           
           <div className="space-y-2">

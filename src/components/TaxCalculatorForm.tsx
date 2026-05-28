@@ -39,6 +39,7 @@ import {
 import { useMutateReport } from '@/hooks/useMutateReport';
 import Tooltip from './Tooltip';
 import OcrUploader from './OcrUploader';
+import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 
 type TaxPeriod = '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
 type EmploymentStatus = '21-100-01' | '21-100-02';
@@ -98,29 +99,29 @@ const parseDecimalNumber = (value: string) => {
 const currentYear = new Date().getFullYear();
 
 const taxPeriodOptions: SelectOption[] = [
-  { value: '01', label: '01 - Januari' },
-  { value: '02', label: '02 - Februari' },
-  { value: '03', label: '03 - Maret' },
-  { value: '04', label: '04 - April' },
-  { value: '05', label: '05 - Mei' },
-  { value: '06', label: '06 - Juni' },
-  { value: '07', label: '07 - Juli' },
-  { value: '08', label: '08 - Agustus' },
-  { value: '09', label: '09 - September' },
-  { value: '10', label: '10 - Oktober' },
-  { value: '11', label: '11 - November' },
-  { value: '12', label: '12 - Desember' },
+  { value: '01', label: 'Januari' },
+  { value: '02', label: 'Februari' },
+  { value: '03', label: 'Maret' },
+  { value: '04', label: 'April' },
+  { value: '05', label: 'Mei' },
+  { value: '06', label: 'Juni' },
+  { value: '07', label: 'Juli' },
+  { value: '08', label: 'Agustus' },
+  { value: '09', label: 'September' },
+  { value: '10', label: 'Oktober' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'Desember' },
 ];
 
 const ptkpOptions: SelectOption[] = [
-  { value: 'TK/0', label: 'TK/0 - Tidak Kawin (Rp 54.000.000)' },
-  { value: 'TK/1', label: 'TK/1 - Tidak Kawin, 1 Tanggungan (Rp 58.500.000)' },
-  { value: 'TK/2', label: 'TK/2 - Tidak Kawin, 2 Tanggungan (Rp 63.000.000)' },
-  { value: 'TK/3', label: 'TK/3 - Tidak Kawin, 3 Tanggungan (Rp 67.500.000)' },
-  { value: 'K/0', label: 'K/0 - Kawin, Tanpa Tanggungan (Rp 58.500.000)' },
-  { value: 'K/1', label: 'K/1 - Kawin, 1 Tanggungan (Rp 63.000.000)' },
-  { value: 'K/2', label: 'K/2 - Kawin, 2 Tanggungan (Rp 67.500.000)' },
-  { value: 'K/3', label: 'K/3 - Kawin, 3 Tanggungan (Rp 72.000.000)' },
+  { value: 'TK/0', label: 'TK/0' },
+  { value: 'TK/1', label: 'TK/1' },
+  { value: 'TK/2', label: 'TK/2' },
+  { value: 'TK/3', label: 'TK/3' },
+  { value: 'K/0', label: 'K/0' },
+  { value: 'K/1', label: 'K/1' },
+  { value: 'K/2', label: 'K/2' },
+  { value: 'K/3', label: 'K/3' },
 ];
 
 const employmentStatusOptions: SelectOption[] = [
@@ -239,88 +240,6 @@ const taxYearOptions: SelectOption[] = Array.from({ length: 9 }, (_, index) => {
   const year = currentYear + 3 - index;
   return { value: String(year), label: String(year) };
 });
-
-type SelectOption = {
-  label: string;
-  value: string;
-};
-
-function ModernSelect({
-  id,
-  value,
-  placeholder = 'Pilih',
-  options,
-  open,
-  onToggle,
-  onChange,
-}: {
-  id: string;
-  value?: string | null;
-  placeholder?: string;
-  options: SelectOption[];
-  open: boolean;
-  onToggle: (id: string | null) => void;
-  onChange: (value: string) => void;
-}) {
-  const selected = options.find((option) => option.value === value);
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => onToggle(open ? null : id)}
-        className="group flex w-full items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/50 px-3.5 py-3 text-left text-sm text-white outline-none transition hover:border-blue-500/50 hover:bg-slate-950/70 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/25"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className={`truncate ${selected ? 'text-white' : 'text-slate-500'}`}>{selected?.label || placeholder}</span>
-        <svg
-          className={`h-4 w-4 flex-shrink-0 text-slate-300 transition-transform duration-200 ${open ? 'rotate-180 text-blue-300' : 'group-hover:text-blue-300'}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-blue-500/25 bg-slate-950/95 p-1.5 shadow-2xl shadow-blue-950/30 backdrop-blur-xl">
-          <div className="max-h-44 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(59,130,246,0.45)_rgba(15,23,42,0.8)]" role="listbox">
-            {options.map((option) => {
-              const active = option.value === value;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    onToggle(null);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition ${
-                    active
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                  }`}
-                  role="option"
-                  aria-selected={active}
-                >
-                  <span className="min-w-0 truncate">{option.label}</span>
-                  {active && (
-                    <svg className="h-4 w-4 flex-shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="m5 13 4 4L19 7" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function YearCombobox({
   id,
@@ -464,7 +383,6 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const [step, setStep] = useState(1);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [saveDialog, setSaveDialog] = useState<SaveDialog | null>(null);
-  const [formMode, setFormMode] = useState<'simple' | 'professional'>('simple');
 
   useEffect(() => {
     setStep(1);
@@ -524,7 +442,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   // Kalkulator pajak lainnya
   const [transactionAmount, setTransactionAmount] = useState<number>(0);
   const [includeVat, setIncludeVat] = useState<boolean>(false);
-  const [vatMode, setVatMode] = useState<VatMode>('11_percent');
+  const [vatMode, setVatMode] = useState<VatMode>('non_luxury_2025');
   const [includePpnbm, setIncludePpnbm] = useState<boolean>(false);
   const [ppnbmRateBand, setPpnbmRateBand] = useState<PpnBmRateBand>('10');
   const [isPph23GrossUp, setIsPph23GrossUp] = useState<boolean>(false);
@@ -810,8 +728,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="includeVat"
                         value={includeVat ? 'true' : 'false'}
                         options={[{value: 'false', label: 'Belum Termasuk PPN'}, {value: 'true', label: 'Sudah Termasuk PPN'}]}
-                        open={openSelect === 'includeVat'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setIncludeVat(value === 'true')}
                       />
                     </div>
@@ -822,9 +740,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <ModernSelect
                         id="vatMode"
                         value={vatMode}
-                        options={[{value: '11_percent', label: 'Tarif Umum 11%'}, {value: '12_percent', label: 'Tarif 12% (Berlaku 2025)'}]}
-                        open={openSelect === 'vatMode'}
-                        onToggle={setOpenSelect}
+                        options={vatModeOptions}
+                       
+                       
                         onChange={(value) => setVatMode(value as VatMode)}
                       />
                     </div>
@@ -841,8 +759,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="includePpnbm"
                         value={includePpnbm ? 'true' : 'false'}
                         options={[{value: 'false', label: 'Belum Termasuk PPnBM'}, {value: 'true', label: 'Sudah Termasuk PPnBM'}]}
-                        open={openSelect === 'includePpnbm'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setIncludePpnbm(value === 'true')}
                       />
                     </div>
@@ -855,8 +773,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="ppnbmRateBand"
                         value={ppnbmRateBand}
                         options={ppnbmRateOptions}
-                        open={openSelect === 'ppnbmRateBand'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setPpnbmRateBand(value as PpnBmRateBand)}
                       />
                     </div>
@@ -887,8 +805,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="pph23Object"
                         value={pph23Object}
                         options={pph23Options}
-                        open={openSelect === 'pph23Object'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setPph23Object(value as Pph23Object)}
                       />
                     </div>
@@ -900,8 +818,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="withoutNpwp"
                         value={withoutNpwp ? 'true' : 'false'}
                         options={[{value: 'false', label: 'Ya, Memiliki NPWP'}, {value: 'true', label: 'Tidak Memiliki NPWP (+100%)'}]}
-                        open={openSelect === 'withoutNpwp'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setWithoutNpwp(value === 'true')}
                       />
                     </div>
@@ -932,8 +850,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="pphUnificationObject"
                         value={pphUnificationObject}
                         options={pphUnificationOptions}
-                        open={openSelect === 'pphUnificationObject'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setPphUnificationObject(value as PphUnificationObject)}
                       />
                     </div>
@@ -945,8 +863,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="withoutNpwp"
                         value={withoutNpwp ? 'true' : 'false'}
                         options={[{value: 'false', label: 'Ya, Memiliki NPWP'}, {value: 'true', label: 'Tidak Memiliki NPWP (+100%)'}]}
-                        open={openSelect === 'withoutNpwp'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setWithoutNpwp(value === 'true')}
                       />
                     </div>
@@ -977,8 +895,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="finalTaxObject"
                         value={finalTaxObject}
                         options={finalTaxOptions}
-                        open={openSelect === 'finalTaxObject'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setFinalTaxObject(value as FinalTaxObject)}
                       />
                     </div>
@@ -1009,8 +927,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="pph26Object"
                         value={pph26Object}
                         options={pph26Options}
-                        open={openSelect === 'pph26Object'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setPph26Object(value as Pph26Object)}
                       />
                     </div>
@@ -1046,8 +964,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="corporateTaxMode"
                         value={corporateTaxMode}
                         options={corporateTaxModeOptions}
-                        open={openSelect === 'corporateTaxMode'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setCorporateTaxMode(value as CorporateTaxMode)}
                       />
                     </div>
@@ -1093,8 +1011,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="useCorporateFacility"
                         value={useCorporateFacility ? 'true' : 'false'}
                         options={[{value: 'false', label: 'Tidak Menggunakan'}, {value: 'true', label: 'Ya, Gunakan Fasilitas'}]}
-                        open={openSelect === 'useCorporateFacility'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setUseCorporateFacility(value === 'true')}
                       />
                     </div>
@@ -1171,8 +1089,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="localTaxObject"
                         value={localTaxObject}
                         options={localTaxOptions}
-                        open={openSelect === 'localTaxObject'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setLocalTaxObject(value as LocalTaxObject)}
                       />
                     </div>
@@ -1208,8 +1126,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="taxPenaltyObject"
                         value={taxPenaltyObject}
                         options={taxPenaltyOptions}
-                        open={openSelect === 'taxPenaltyObject'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setTaxPenaltyObject(value as TaxPenaltyObject)}
                       />
                     </div>
@@ -1381,10 +1299,6 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator PPh 21</h2>
-                <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800 self-start">
-                  <button onClick={() => { setFormMode('simple'); setJenisPemotongan('bulanan'); }} className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition ${formMode === 'simple' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Simple</button>
-                  <button onClick={() => setFormMode('professional')} className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition ${formMode === 'professional' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Professional</button>
-                </div>
               </div>
               <p className="text-xs text-slate-400 mt-2 sm:mt-1">Isi penghasilan, pengurang, lalu lihat perhitungan PPh 21.</p>
             </div>
@@ -1398,26 +1312,24 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
             )}
           </div>
 
-          {/* Jenis Pemotongan - Only in Professional Mode */}
-          {formMode === 'professional' && (
-            <div className="space-y-1.5 mb-6">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                Jenis Pemotongan
-                <Tooltip content="Pilih jenis pemotongan PPh 21 yang sesuai dengan kebutuhan Anda." />
-              </label>
+          {/* Jenis Pemotongan */}
+          <div className="space-y-1.5 mb-6">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+              Jenis Pemotongan
+              <Tooltip content="Pilih jenis pemotongan PPh 21 yang sesuai dengan kebutuhan Anda." />
+            </label>
               <ModernSelect
                 id="jenisPemotongan"
                 value={jenisPemotongan}
                 options={jenisPemotonganOptions}
-                open={openSelect === 'jenisPemotongan'}
-                onToggle={setOpenSelect}
+               
+               
                 onChange={(value) => {
                   setJenisPemotongan(value as JenisPemotongan);
                   setStep(1); // Reset step if changing type
                 }}
               />
             </div>
-          )}
 
           {/* TAHUNAN VIEW */}
           {jenisPemotongan === 'tahunan' && (
@@ -1625,8 +1537,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         id="ptkpStatusTahunan"
                         value={ptkpStatus}
                         options={ptkpOptions}
-                        open={openSelect === 'ptkpStatusTahunan'}
-                        onToggle={setOpenSelect}
+                       
+                       
                         onChange={(value) => setPtkpStatus(value as PtkpStatus)}
                       />
                     </div>
@@ -1735,50 +1647,44 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPh bulan</label>
-                      <ModernSelect id="taxPeriod" value={taxPeriod} options={taxPeriodOptions} open={openSelect === 'taxPeriod'} onToggle={setOpenSelect} onChange={(value) => setTaxPeriod(value as TaxPeriod)} />
+                      <ModernSelect id="taxPeriod" value={taxPeriod} options={taxPeriodOptions} onChange={(value) => setTaxPeriod(value as TaxPeriod)} />
                     </div>
-                    {formMode === 'professional' && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
-                        <ModernSelect id="employmentStatus" value={employmentStatus} options={employmentStatusOptions} open={openSelect === 'employmentStatus'} onToggle={setOpenSelect} onChange={(value) => setEmploymentStatus(value as EmploymentStatus)} />
-                      </div>
-                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
+                      <ModernSelect id="employmentStatus" value={employmentStatus} options={employmentStatusOptions} onChange={(value) => setEmploymentStatus(value as EmploymentStatus)} />
+                    </div>
                     {taxPeriod === '12' && (
                       <div className="sm:col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4 flex gap-3 text-amber-200/90 text-xs sm:text-sm leading-relaxed items-start">
                         <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path></svg>
-                        <p>Penerapan TER tidak berlaku untuk bulan Desember. Agar lebih akurat, Anda bisa hitung pph bulan Desember <button type="button" onClick={() => { setFormMode('professional'); setJenisPemotongan('tahunan'); setStep(1); }} className="text-amber-400 font-semibold hover:underline decoration-amber-400/50 underline-offset-2">disini</button></p>
+                        <p>Penerapan TER tidak berlaku untuk bulan Desember. Agar lebih akurat, Anda bisa hitung pph bulan Desember <button type="button" onClick={() => { setJenisPemotongan('tahunan'); setStep(1); }} className="text-amber-400 font-semibold hover:underline decoration-amber-400/50 underline-offset-2">disini</button></p>
                       </div>
                     )}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status PTKP</label>
-                      <ModernSelect id="ptkpStatus" value={ptkpStatus} options={ptkpOptions} open={openSelect === 'ptkpStatus'} onToggle={setOpenSelect} onChange={(value) => setPtkpStatus(value as PtkpStatus)} />
+                      <ModernSelect id="ptkpStatus" value={ptkpStatus} options={ptkpOptions} onChange={(value) => setPtkpStatus(value as PtkpStatus)} />
                     </div>
-                    {formMode === 'professional' && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema perhitungan</label>
-                        <SchemeRadioPicker
-                          value={calculationScheme}
-                          onChange={setCalculationScheme}
-                          options={[
-                            { value: 'gross', label: 'Gross', tooltip: 'PPh 21 dipotong dari penghasilan bruto yang Anda masukkan.' },
-                            { value: 'gross_up', label: 'Gross Up', tooltip: 'PPh 21 ditanggung sebagai tunjangan pajak, lalu ikut menambah dasar penghasilan bruto.' }
-                          ]}
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema perhitungan</label>
+                      <SchemeRadioPicker
+                        value={calculationScheme}
+                        onChange={setCalculationScheme}
+                        options={[
+                          { value: 'gross', label: 'Gross', tooltip: 'PPh 21 dipotong dari penghasilan bruto yang Anda masukkan.' },
+                          { value: 'gross_up', label: 'Gross Up', tooltip: 'PPh 21 ditanggung sebagai tunjangan pajak, lalu ikut menambah dasar penghasilan bruto.' }
+                        ]}
+                      />
+                    </div>
                   </div>
-                  <div className={`grid gap-4 ${formMode === 'professional' ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
-                    {formMode === 'professional' && (
-                      <div className="space-y-1.5">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tunjangan PPh</label>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                           <input type="text" inputMode="numeric" value={formatNumberInput(tunjangan)} onChange={(e) => handleNumberInput(e.target.value, setTunjangan)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
                         </div>
                       </div>
-                    )}
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan bruto</label>
                       <div className="relative">
@@ -1825,8 +1731,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
               )}
 
               <div className="flex justify-end pt-2 gap-3">
-                <button type="button" onClick={() => { setGaji(0); setTunjangan(0); }} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" onClick={() => { setGaji(0); setTunjangan(0); }} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
                 <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
                 </button>
@@ -1844,12 +1750,12 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 <div className="p-4 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis Pemotongan Final</label>
-                    <ModernSelect id="finalTaxObjectPph21" value={finalTaxObjectPph21} options={pph21FinalOptions} open={openSelect === 'finalTaxObjectPph21'} onToggle={setOpenSelect} onChange={(value) => setFinalTaxObjectPph21(value as Pph21FinalObject)} />
+                    <ModernSelect id="finalTaxObjectPph21" value={finalTaxObjectPph21} options={pph21FinalOptions} onChange={(value) => setFinalTaxObjectPph21(value as Pph21FinalObject)} />
                   </div>
                   {finalTaxObjectPph21 === 'honorarium_apbn' && (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Golongan PNS/TNI/Polri</label>
-                      <ModernSelect id="pnsGolongan" value={pnsGolongan} options={pnsGolonganOptions} open={openSelect === 'pnsGolongan'} onToggle={setOpenSelect} onChange={(value) => setPnsGolongan(value)} />
+                      <ModernSelect id="pnsGolongan" value={pnsGolongan} options={pnsGolonganOptions} onChange={(value) => setPnsGolongan(value)} />
                     </div>
                   )}
                   <div className="space-y-1.5">
@@ -1880,8 +1786,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
               )}
 
               <div className="flex justify-end pt-2 gap-3">
-                <button type="button" onClick={() => setFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" onClick={() => setFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
                 <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
                 </button>
@@ -1900,18 +1806,18 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
-                      <ModernSelect id="tidakFinalCategory" value={tidakFinalCategory} options={pph21TidakFinalOptions} open={openSelect === 'tidakFinalCategory'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalCategory(value as Pph21TidakFinalCategory)} />
+                      <ModernSelect id="tidakFinalCategory" value={tidakFinalCategory} options={pph21TidakFinalOptions} onChange={(value) => setTidakFinalCategory(value as Pph21TidakFinalCategory)} />
                     </div>
-                    {tidakFinalCategory === '21-100-03' && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis</label>
-                        <ModernSelect id="tidakFinalJenis" value={tidakFinalJenis || 'non_bulanan'} options={pph21TidakFinalJenisOptions} open={openSelect === 'tidakFinalJenis'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalJenis(value as Pph21TidakFinalJenis)} />
-                      </div>
-                    )}
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kepemilikan NPWP</label>
-                      <ModernSelect id="tidakFinalHasNpwp" value={tidakFinalHasNpwp ? 'true' : 'false'} options={[{value: 'true', label: 'Ya, Memiliki NPWP'}, {value: 'false', label: 'Tidak Memiliki NPWP'}]} open={openSelect === 'tidakFinalHasNpwp'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalHasNpwp(value === 'true')} />
+                      <ModernSelect id="tidakFinalHasNpwp" value={tidakFinalHasNpwp ? 'true' : 'false'} options={[{value: 'true', label: 'Ya, Memiliki NPWP'}, {value: 'false', label: 'Tidak Memiliki NPWP'}]} onChange={(value) => setTidakFinalHasNpwp(value === 'true')} />
                     </div>
+                    {tidakFinalCategory === '21-100-03' && (
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis</label>
+                        <ModernSelect id="tidakFinalJenis" value={tidakFinalJenis || 'non_bulanan'} options={pph21TidakFinalJenisOptions} onChange={(value) => setTidakFinalJenis(value as Pph21TidakFinalJenis)} />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan Bruto</label>
@@ -1951,8 +1857,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
               )}
 
               <div className="flex justify-end pt-2 gap-3">
-                <button type="button" onClick={() => setTidakFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" onClick={() => setTidakFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
                 <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
                 </button>

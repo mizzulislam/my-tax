@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { BillingCode } from '@/types/taxpayer';
-import { calculateExpiry, generateBillingCode, isBillingExpired } from '@/lib/billingGenerator';
+import { calculateDraftReviewDate, generateBillingDraftReference, isDraftReviewDue } from '@/lib/billingGenerator';
 import { TaxReportData } from './useFetchReports';
 
 type BillingRow = {
@@ -11,7 +11,7 @@ type BillingRow = {
   billing_code: string;
   amount: number | string | null;
   tax_type: string;
-  status: 'active' | 'paid' | 'expired' | 'cancelled';
+  status: 'draft' | 'reviewed' | 'exported' | 'cancelled' | 'active' | 'paid' | 'expired';
   expires_at: string;
   paid_at: string | null;
   created_at: string;
@@ -30,12 +30,19 @@ function mapBilling(row: BillingRow): BillingCode {
     billingCode: row.billing_code,
     amount: Number(row.amount || 0),
     taxType: row.tax_type,
-    status: isBillingExpired(row.expires_at) && row.status === 'active' ? 'expired' : row.status,
+    status: normalizeDraftStatus(row.status, row.expires_at),
     expiresAt: row.expires_at,
     paidAt: row.paid_at,
     created_at: row.created_at,
     report: row.tax_reports || null,
   };
+}
+
+function normalizeDraftStatus(status: BillingRow['status'], reviewAt: string): BillingCode['status'] {
+  if (status === 'paid') return 'exported';
+  if (status === 'active') return isDraftReviewDue(reviewAt) ? 'reviewed' : 'draft';
+  if (status === 'expired') return 'reviewed';
+  return status;
 }
 
 export function useFetchBillingCodes(status?: string) {
@@ -71,14 +78,14 @@ export function useCreateBillingCode() {
     mutationFn: async (report: TaxReportData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Sesi aktif tidak ditemukan.');
-      if (report.tax_payable <= 0) throw new Error('Kode billing hanya dapat dibuat untuk PPh terutang di atas Rp 0.');
+      if (report.tax_payable <= 0) throw new Error('Draft pembayaran hanya dapat dibuat untuk estimasi PPh terutang di atas Rp 0.');
 
       const { data: existing } = await supabase
         .from('billing_codes')
         .select('*')
         .eq('user_id', user.id)
         .eq('report_id', report.id)
-        .in('status', ['active', 'paid'])
+        .in('status', ['draft', 'reviewed', 'exported', 'active', 'paid'])
         .maybeSingle();
 
       if (existing) return mapBilling(existing);
@@ -88,11 +95,11 @@ export function useCreateBillingCode() {
         .insert({
           user_id: user.id,
           report_id: report.id,
-          billing_code: generateBillingCode(),
+          billing_code: generateBillingDraftReference(),
           amount: report.tax_payable,
           tax_type: 'PPh 21',
-          status: 'active',
-          expires_at: calculateExpiry().toISOString(),
+          status: 'draft',
+          expires_at: calculateDraftReviewDate().toISOString(),
         })
         .select('*')
         .single();
@@ -106,15 +113,14 @@ export function useCreateBillingCode() {
   });
 }
 
-export function useConfirmBillingPaid() {
+export function useMarkBillingDraftExported() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (billing: BillingCode) => {
-      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('billing_codes')
-        .update({ status: 'paid', paid_at: now })
+        .update({ status: 'exported', paid_at: null })
         .eq('id', billing.id)
         .select('*')
         .single();
@@ -124,20 +130,20 @@ export function useConfirmBillingPaid() {
       if (billing.report_id) {
         await supabase
           .from('tax_reports')
-          .update({ status: 'paid' })
+          .update({ status: 'submitted' })
           .eq('id', billing.report_id);
 
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from('notifications').insert({
             user_id: user.id,
-            title: 'Pembayaran pajak dikonfirmasi',
-            message: `Kode billing ${billing.billingCode} telah ditandai lunas.`,
+            title: 'Draft pembayaran diekspor',
+            message: `Draft pembayaran ${billing.billingCode} telah diekspor sebagai ringkasan persiapan. Buat kode billing resmi hanya di sistem DJP/Coretax.`,
             is_read: false,
             notification_type: 'status_change',
             priority: 'normal',
             action_url: '/dashboard/billing',
-            metadata: { billingCode: billing.billingCode, reportId: billing.report_id },
+            metadata: { draftReference: billing.billingCode, reportId: billing.report_id },
           });
         }
       }
@@ -151,3 +157,5 @@ export function useConfirmBillingPaid() {
     },
   });
 }
+
+export const useConfirmBillingPaid = useMarkBillingDraftExported;

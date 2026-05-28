@@ -228,5 +228,5 @@ export async function insertAuditLog(
 }
 
 export function isValidRole(role: unknown): role is UserRole {
-  return role === 'user' || role === 'consultant' || role === 'admin';
+  return role === 'user' || role === 'admin';
 }

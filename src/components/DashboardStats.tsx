@@ -8,7 +8,7 @@ export default function DashboardStats({ data }: { data: TaxReportData[] }) {
     .reduce((sum, current) => sum + current.tax_payable, 0);
 
   const totalSubmitted = data.filter((report) => report.status === 'submitted').length;
-  const totalPaid = data.filter((report) => report.status === 'paid').length;
+  const totalLegacyPaid = data.filter((report) => report.status === 'paid').length;
 
   // Hitung Tarif Efektif Pajak (ETR) Rata-Rata Wajib Pajak
   const totalGross = data.reduce((sum, report) => sum + report.gross_income, 0);
@@ -65,12 +65,12 @@ export default function DashboardStats({ data }: { data: TaxReportData[] }) {
             <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
               <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
-            <span className="text-[10px] md:text-sm font-semibold text-emerald-400/90 uppercase tracking-[0.14em] md:tracking-widest leading-tight">Selesai</span>
+            <span className="text-[10px] md:text-sm font-semibold text-emerald-400/90 uppercase tracking-[0.14em] md:tracking-widest leading-tight">Arsip Lama</span>
           </div>
           <p className="text-lg sm:text-xl md:text-4xl font-bold text-white tracking-tight leading-tight">
-            {totalPaid} <span className="text-slate-500 text-xs md:text-xl font-medium">Sukses</span>
+            {totalLegacyPaid} <span className="text-slate-500 text-xs md:text-xl font-medium">Catatan</span>
           </p>
-          <p className="text-[10px] md:text-sm text-slate-500 mt-2 md:mt-4 leading-snug md:leading-relaxed group-hover:text-slate-400 transition-colors">Sudah mendapat BPE</p>
+          <p className="text-[10px] md:text-sm text-slate-500 mt-2 md:mt-4 leading-snug md:leading-relaxed group-hover:text-slate-400 transition-colors">Cocokkan dengan bukti resmi</p>
         </div>
       </div>
 

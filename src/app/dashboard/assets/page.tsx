@@ -52,8 +52,8 @@ export default function AssetsPage() {
           <p className="text-sm">Menghubungkan ke database perpajakan...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <div className="lg:col-span-1">
+        <div className="flex flex-col gap-10 w-full">
+          <div className="w-full">
             <AssetForm
               editAsset={editAsset}
               activeTaxYear={taxYear}
@@ -64,7 +64,7 @@ export default function AssetsPage() {
             />
           </div>
 
-          <div className="lg:col-span-2 space-y-6">
+          <div className="w-full space-y-6">
             <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Pilih Tahun Pajak

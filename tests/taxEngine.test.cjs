@@ -101,6 +101,66 @@ test('calculateConsolidatedTax combines progressive, credits, and final taxes', 
   assert.equal(result.grandTotalTaxPayable, 2_500_000);
 });
 
+test('calculateConsolidatedTax excludes PP 23 final tax when pekerjaan bebas exists', () => {
+  const result = calculateConsolidatedTax(
+    [
+      {
+        id: 'income-1',
+        userId: 'user-1',
+        sourceName: 'Praktik Konsultan',
+        sourceType: 'pekerjaan_bebas',
+        annualIncome: 100_000_000,
+        taxYear: 2026,
+        isTaxWithheld: false,
+        withheldAmount: 0,
+        createdAt: '2026-01-01',
+      },
+      {
+        id: 'income-2',
+        userId: 'user-1',
+        sourceName: 'Toko Online',
+        sourceType: 'usaha',
+        annualIncome: 600_000_000,
+        taxYear: 2026,
+        isTaxWithheld: false,
+        withheldAmount: 0,
+        createdAt: '2026-01-01',
+      },
+    ],
+    'TK/0',
+    2026
+  );
+
+  assert.equal(result.totalGrossProgressive, 400_000_000);
+  assert.equal(result.totalFinalTax, 0);
+  assert.match(result.warnings.join('\n'), /Pekerjaan Bebas/);
+});
+
+test('calculateConsolidatedTax moves expired WPOP UMKM PP 23 income to progressive tax', () => {
+  const result = calculateConsolidatedTax(
+    [
+      {
+        id: 'income-1',
+        userId: 'user-1',
+        sourceName: 'Warung Keluarga',
+        sourceType: 'usaha',
+        annualIncome: 600_000_000,
+        taxYear: 2026,
+        registrationYearForUmkm: 2018,
+        isTaxWithheld: false,
+        withheldAmount: 0,
+        createdAt: '2026-01-01',
+      },
+    ],
+    'TK/0',
+    2026
+  );
+
+  assert.equal(result.totalGrossProgressive, 600_000_000);
+  assert.equal(result.totalFinalTax, 0);
+  assert.match(result.warnings.join('\n'), /kedaluwarsa/);
+});
+
 test('calculateVat supports 2025 non-luxury DPP value and standard rate', () => {
   assert.equal(calculateVat(12_000_000, 'non_luxury_2025').tax, 1_320_000);
   assert.equal(calculateVat(12_000_000, 'standard').tax, 1_440_000);

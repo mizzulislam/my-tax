@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Tooltip from '@/components/Tooltip';
 import { useAlert } from '@/contexts/AlertContext';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
 interface Transaction {
   id: string;
@@ -109,6 +110,12 @@ export default function TransactionsPage() {
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
+      if (error) {
+        if (error.message.includes('Could not find') || error.code === 'PGRST205') {
+          setIsTableMissing(true);
+          setTransactions([]);
+          return;
+        }
         throw error;
       }
       setTransactions(data || []);
@@ -327,15 +334,12 @@ export default function TransactionsPage() {
                   Kategori Finansial
                   <Tooltip content="Pilih kategori aktivitas. Sistem akan langsung mencocokkan jenis PPh yang paling relevan secara semi-otomatis!" />
                 </label>
-                <select
+                <ModernSelect
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all appearance-none"
-                >
-                  {Object.keys(CATEGORY_TAX_MAPPING).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  onChange={setCategory}
+                  className="z-50"
+                  options={Object.keys(CATEGORY_TAX_MAPPING).map((cat) => ({ value: cat, label: cat }))}
+                />
               </div>
 
               {/* SEKSI KLASIFIKASI SEMI-OTOMATIS (FR-08) & TOOLTIP EDUKATIF (FR-12) */}
@@ -408,16 +412,15 @@ export default function TransactionsPage() {
               </div>
 
               <div className="w-full sm:w-auto">
-                <select
+                <ModernSelect
                   value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full sm:w-auto bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none transition-all appearance-none"
-                >
-                  <option value="Semua Kategori">Semua Kategori</option>
-                  {Object.keys(CATEGORY_TAX_MAPPING).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  onChange={setFilterCategory}
+                  className="sm:w-[200px]"
+                  options={[
+                    { value: 'Semua Kategori', label: 'Semua Kategori' },
+                    ...Object.keys(CATEGORY_TAX_MAPPING).map((cat) => ({ value: cat, label: cat }))
+                  ]}
+                />
               </div>
             </div>
 

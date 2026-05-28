@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import TaxCalculatorForm, { calculatorOptions, type CalculatorType } from '@/components/TaxCalculatorForm';
+import { DisclaimerBox } from '@/components/DisclaimerBox';
 
 type TaxScopeFilter = 'all' | 'central' | 'regional' | 'sanction';
 type TaxFamilyFilter = 'all' | 'pph' | 'ppn' | 'stamp';
@@ -131,10 +132,11 @@ export default function KalkulatorPage() {
 
       <div className="mt-4 grid w-full items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="order-2 xl:order-1">
+          <DisclaimerBox />
           <TaxCalculatorForm calculatorType={calculatorType} />
         </div>
 
-        <aside className="order-1 space-y-4 xl:order-2">
+        <aside className="order-1 space-y-4 xl:order-2 xl:mt-4">
           <div className="relative overflow-visible bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl md:rounded-3xl p-4 xl:p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -284,13 +286,16 @@ export default function KalkulatorPage() {
               </div>
             </div>
 
-            <div className="mt-3 hidden flex-wrap items-center gap-2 text-[10px] font-bold text-slate-500 md:flex">
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedScopeLabel}</span>
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedFamilyLabel}</span>
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedSortFieldLabel}</span>
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedSortDirectionLabel}</span>
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{visibleCalculatorOptions.length} jenis</span>
-            </div>
+            {(taxScopeFilter !== 'all' || taxFamilyFilter !== 'all') && (
+              <div className="mt-3 hidden flex-wrap items-center gap-2 text-[10px] font-bold text-slate-400 md:flex">
+                {taxScopeFilter !== 'all' && (
+                  <span className="rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 px-2.5 py-1">{selectedScopeLabel}</span>
+                )}
+                {taxFamilyFilter !== 'all' && (
+                  <span className="rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 px-2.5 py-1">{selectedFamilyLabel}</span>
+                )}
+              </div>
+            )}
 
             <div className="mt-4 flex flex-wrap gap-2 xl:mt-5 xl:block xl:space-y-2.5">
               {visibleCalculatorOptions.map((item) => {

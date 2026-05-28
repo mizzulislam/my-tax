@@ -12,6 +12,7 @@ type IncomeSourceRow = {
   npwp_pemotong: string | null;
   is_tax_withheld: boolean;
   withheld_amount: number | string;
+  registration_year_for_umkm: number | string | null;
   notes: string | null;
   created_at: string;
 };
@@ -53,6 +54,7 @@ export function useFetchIncomeSources(taxYear?: number) {
         npwpPemotong: d.npwp_pemotong,
         isTaxWithheld: d.is_tax_withheld,
         withheldAmount: Number(d.withheld_amount),
+        registrationYearForUmkm: d.registration_year_for_umkm ? Number(d.registration_year_for_umkm) : null,
         notes: d.notes,
         created_at: d.created_at,
       }));
@@ -78,6 +80,7 @@ export function useMutateIncomeSource() {
         npwp_pemotong: input.npwpPemotong || null,
         is_tax_withheld: input.isTaxWithheld,
         withheld_amount: input.isTaxWithheld ? input.withheldAmount : 0,
+        registration_year_for_umkm: input.sourceType === 'usaha' ? input.registrationYearForUmkm || null : null,
         notes: input.notes || null,
       };
 

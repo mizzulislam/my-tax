@@ -4,6 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import Tooltip from './Tooltip';
 import { useAlert } from '@/contexts/AlertContext';
 
+const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
+const parseFormattedNumber = (value: string) => {
+  const normalized = value.replace(/[^\d]/g, '');
+  return normalized ? Number(normalized) : 0;
+};
+
 type OcrResult = {
   nominal: number;
   date: string | null;
@@ -290,10 +296,11 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal (Rp)</label>
                     <input 
-                      type="number" 
-                      value={editForm?.nominal || 0} 
-                      onChange={(e) => setEditForm(prev => prev ? {...prev, nominal: Number(e.target.value)} : null)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                      type="text" 
+                      inputMode="numeric"
+                      value={formatNumberInput(editForm?.nominal || 0)} 
+                      onChange={(e) => setEditForm(prev => prev ? {...prev, nominal: parseFormattedNumber(e.target.value)} : null)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
                     />
                   </div>
                   <div>

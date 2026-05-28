@@ -1,32 +1,35 @@
-export function generateBillingCode(): string {
-  const part = (length: number) =>
-    Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
-
-  return `${part(3)}-${part(3)}-${part(4)}-${part(4)}`;
+export function generateBillingDraftReference(from: Date = new Date()): string {
+  const stamp = from.toISOString().replace(/\D/g, '').slice(0, 14);
+  return `DRAFT-TAX-${stamp}`;
 }
 
-export function calculateExpiry(from: Date = new Date()): Date {
-  const expiry = new Date(from);
-  expiry.setDate(expiry.getDate() + 30);
-  return expiry;
+export function calculateDraftReviewDate(from: Date = new Date()): Date {
+  const reviewDate = new Date(from);
+  reviewDate.setDate(reviewDate.getDate() + 30);
+  return reviewDate;
 }
 
-export function isBillingExpired(expiresAt: string | Date): boolean {
-  return new Date(expiresAt).getTime() < Date.now();
+export function isDraftReviewDue(reviewAt: string | Date): boolean {
+  return new Date(reviewAt).getTime() < Date.now();
 }
 
-export function buildBillingVerificationPayload(input: {
-  billingCode: string;
+export function buildDraftPaymentPayload(input: {
+  draftReference: string;
   amount: number;
   reportId?: string | null;
 }) {
   return JSON.stringify({
-    issuer: 'My Tax App',
-    type: 'MOCK_E_BILLING',
-    billingCode: input.billingCode,
+    issuer: 'Tax Feyments',
+    type: 'PAYMENT_PREPARATION_DRAFT',
+    draftReference: input.draftReference,
     amount: input.amount,
     reportId: input.reportId || null,
     generatedAt: new Date().toISOString(),
-    disclaimer: 'Simulasi kode billing. Bukan kanal resmi DJP.',
+    disclaimer: 'Draft persiapan pembayaran. Bukan kode billing, bukan kanal pembayaran, dan bukan bukti resmi DJP.',
   });
 }
+
+export const generateBillingCode = generateBillingDraftReference;
+export const calculateExpiry = calculateDraftReviewDate;
+export const isBillingExpired = isDraftReviewDue;
+export const buildBillingVerificationPayload = buildDraftPaymentPayload;

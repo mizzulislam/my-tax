@@ -5,7 +5,7 @@ import { ApiAuthError, requireBearerToken } from '@/lib/apiAuth';
 import { NextRequest, NextResponse } from 'next/server';
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
-const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_MAX = 10;
 
 // Daftar kata kunci berisiko tinggi atau sengketa perpajakan
 const RISK_WORDS = [
@@ -23,6 +23,19 @@ const RISK_WORDS = [
   'palsu', 
   'menghindari pajak'
 ];
+
+const BLOCKED_REQUEST_PATTERNS = [
+  /cara\s+(menghindari|mengelak|mengurangi)\s+pajak\s+secara\s+ilegal/i,
+  /(manipulasi|ubah|mengubah)\s+(data|angka|nominal|laporan|spt|faktur)/i,
+  /(faktur|invoice|bukti potong|dokumen)\s+(palsu|fiktif)/i,
+  /(sembunyikan|menyembunyikan)\s+(aset|omzet|penghasilan|transaksi)/i,
+  /(suap|menyuap)\s+(petugas|pegawai|fiskus|pajak)/i,
+  /tax\s+evasion/i,
+];
+
+function isBlockedTaxRequest(value: string) {
+  return BLOCKED_REQUEST_PATTERNS.some((pattern) => pattern.test(value));
+}
 
 const MANDATORY_SAFETY_SYSTEM_PROMPT = `
 ⚠️ PERINGATAN KEAMANAN MUTLAK (SANGAT KETAT) ⚠️
@@ -143,7 +156,7 @@ function formatAiContext(aiContext?: AiTaxContextPayload | null) {
     `Tahun konteks: ${aiContext.currentYear || new Date().getFullYear()}`,
     `Total Penghasilan Tahun Ini: ${formatRupiah(aiContext.totalIncome)}`,
     `Total Pajak Terutang Tahun Ini: ${formatRupiah(aiContext.totalTax)}`,
-    `Status Laporan: ${aiContext.draftCount || 0} draft, ${aiContext.submittedCount || 0} submitted, ${aiContext.paidCount || 0} lunas`,
+    `Status Laporan: ${aiContext.draftCount || 0} draft, ${aiContext.submittedCount || 0} submitted, ${aiContext.paidCount || 0} arsip paid lama`,
     `Sumber Penghasilan: ${incomeSources}`,
     `Aset Tercatat: ${assets}`,
     `Transaksi Terakhir: ${recentTransactions}`,
@@ -352,6 +365,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  if (isBlockedTaxRequest(message)) {
+    await logSecurityEvent({
+      actorId: user.id,
+      actorEmail: user.email || null,
+      action: 'AI_CHAT_BLOCKED_ILLEGAL_TAX_REQUEST',
+      severity: 'warning',
+      details: { messagePreview: message.slice(0, 160) },
+      req,
+    });
+
+    return NextResponse.json(
+      {
+        error:
+          'Saya tidak bisa membantu permintaan yang mengarah ke manipulasi, pemalsuan, penyembunyian data, atau penghindaran pajak ilegal. Saya bisa bantu jelaskan opsi kepatuhan yang aman dan langkah koreksi yang sah.',
+      },
+      { status: 403 }
+    );
+  }
+
   const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   let rateLimit: RateLimitResult;
   try {
@@ -495,17 +527,17 @@ export async function POST(req: NextRequest) {
       toneInstruction = 'Gunakan gaya bahasa sopan, terstruktur, formal, berwibawa, dan tertata rapi layaknya konsultan profesional senior.';
       break;
     case 'humor':
-      toneInstruction = 'Gunakan gaya bahasa yang jenaka, penuh candaan kocak, sarkasme ringan, pantun lucu, dan menghibur agar materi pajak tidak membosankan.';
+      toneInstruction = 'Gunakan gaya bahasa ringan dan mudah dicerna. Humor boleh sangat secukupnya, tetapi jangan memakai sarkasme untuk topik sanksi, sengketa, utang pajak, atau data pribadi.';
       break;
     case 'simple':
       toneInstruction = 'Gunakan gaya bahasa anak-anak yang super simpel, ramah, dan sangat mendasar seolah menjelaskan ke anak kecil berusia 10 tahun.';
       break;
     default: // 'gaul'
-      toneInstruction = 'Gunakan gaya bahasa santai anak muda Jakarta (lue-gue, gaul, asik, pakai kata-kata seru, hindari formalitas berlebihan).';
+      toneInstruction = 'Gunakan gaya bahasa santai, ramah, dan tetap rapi. Hindari slang berlebihan untuk topik hukum, sanksi, sengketa, dan data pribadi.';
   }
 
-  const systemInstruction = `Kamu adalah Feyn, Asisten Konsultan Pajak dari aplikasi "My Tax".
-Tugasmu adalah menjawab pertanyaan tentang pajak di Indonesia dengan gaya bahasa yang SANGAT luwes, asik, to the point (langsung ke intinya tanpa basa-basi), dan akurat. Hindari jargon teknis tingkat dewa tanpa analogi.
+  const systemInstruction = `Kamu adalah Feyn, Asisten Edukasi Pajak dari aplikasi "My Tax".
+Tugasmu adalah membantu pengguna memahami pajak Indonesia, menyiapkan data, dan mengenali risiko kepatuhan. Kamu bukan konsultan pajak resmi, bukan kuasa hukum, dan tidak boleh menggantikan DJP, konsultan bersertifikat, atau penasihat hukum untuk kasus konkret. Jawab dengan gaya luwes, to the point, dan akurat. Hindari jargon teknis tanpa analogi.
 
 🎯 PANDUAN MENJAWAB (WAJIB DIIKUTI!):
 1. **Langsung Jawab & To the Point:** Paragraf pertama langsung menjawab pertanyaannya. 
@@ -528,10 +560,10 @@ Contoh format kuis wajib (pastikan JSON valid dan memiliki properti persis seper
       "explanation": "Yap! PPN (Pajak Pertambahan Nilai) dikenakan untuk konsumsi barang/jasa, termasuk beli kopi!"
     },
     {
-      "question": "Berapa tarif dasar PPN saat ini?",
-      "options": ["10%", "11%", "5%"],
-      "correctAnswerIndex": 1,
-      "explanation": "Benar! Tarif dasar PPN saat ini adalah 11%."
+      "question": "Berapa tarif umum PPN dalam skenario standar 2025?",
+      "options": ["10%", "11%", "12%"],
+      "correctAnswerIndex": 2,
+      "explanation": "Benar! Tarif umum PPN standar adalah 12%, dengan ketentuan DPP nilai lain untuk banyak barang/jasa non-mewah."
     },
     {
       "question": "Jika Izzul berpenghasilan Rp 3.000.000 sebulan, apakah wajib membayar PPh 21?",

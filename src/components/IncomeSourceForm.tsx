@@ -1,13 +1,65 @@
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { incomeSourceSchema, IncomeSourceInput } from '@/types/taxpayer';
 import { useMutateIncomeSource } from '@/hooks/useIncomeSources';
 import { useEffect } from 'react';
 import Tooltip from './Tooltip';
 import type { z } from 'zod';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
+const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
+const parseFormattedNumber = (value: string) => {
+  const normalized = value.replace(/[^\d]/g, '');
+  return normalized ? Number(normalized) : 0;
+};
+
+function SchemeRadioPicker<T extends string | boolean>({
+  value,
+  onChange,
+  options
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; tooltip?: string }[];
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup">
+      {options.map((option, index) => {
+        const selected = value === option.value;
+        return (
+          <div
+            key={String(option.value) + index}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onChange(option.value);
+              }
+            }}
+            tabIndex={0}
+            className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left outline-none transition focus:ring-2 focus:ring-blue-500/30 ${
+              selected
+                ? 'border-blue-500/70 bg-blue-500/10 text-white shadow-lg shadow-blue-950/20'
+                : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-blue-500/45 hover:bg-slate-950/70'
+            }`}
+            role="radio"
+            aria-checked={selected}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${selected ? 'border-blue-400' : 'border-slate-500'}`}>
+                {selected && <span className="h-2.5 w-2.5 rounded-full bg-blue-400"></span>}
+              </span>
+              <span className="truncate text-sm font-bold">{option.label}</span>
+            </span>
+            {option.tooltip && <Tooltip content={option.tooltip} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 // RHF form values type — uses Zod output (with defaults resolved) to match zodResolver output
 type IncomeSourceFormValues = z.infer<typeof incomeSourceSchema>;
 
@@ -44,6 +96,7 @@ export default function IncomeSourceForm({
       npwpPemotong: '',
       isTaxWithheld: false,
       withheldAmount: 0,
+      registrationYearForUmkm: null,
       notes: '',
     },
   });
@@ -64,6 +117,7 @@ export default function IncomeSourceForm({
         npwpPemotong: editSource.npwpPemotong || '',
         isTaxWithheld: editSource.isTaxWithheld,
         withheldAmount: editSource.withheldAmount || 0,
+        registrationYearForUmkm: editSource.registrationYearForUmkm || null,
         notes: editSource.notes || '',
       });
     } else {
@@ -75,6 +129,7 @@ export default function IncomeSourceForm({
         npwpPemotong: '',
         isTaxWithheld: false,
         withheldAmount: 0,
+        registrationYearForUmkm: null,
         notes: '',
       });
     }
@@ -103,6 +158,7 @@ export default function IncomeSourceForm({
       }
     } else if (!isTaxWithheld) {
       setValue('withheldAmount', 0);
+      setValue('npwpPemotong', '');
     }
   }, [isTaxWithheld, annualIncome, sourceType, setValue]);
 
@@ -112,6 +168,7 @@ export default function IncomeSourceForm({
       ...data,
       isTaxWithheld: data.isTaxWithheld ?? false,
       withheldAmount: data.withheldAmount ?? 0,
+      registrationYearForUmkm: data.sourceType === 'usaha' ? data.registrationYearForUmkm || null : null,
     };
     mutate(
       {
@@ -128,8 +185,8 @@ export default function IncomeSourceForm({
   };
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/30 via-indigo-500/5 to-transparent opacity-40"></div>
+    <div className="relative p-[1px] rounded-3xl group shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/30 via-indigo-500/5 to-transparent opacity-40 rounded-3xl"></div>
       
       <div className="relative bg-slate-900/85 backdrop-blur-2xl p-6 md:p-8 rounded-[23px] space-y-6">
         <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-[40px] rounded-full pointer-events-none"></div>
@@ -152,7 +209,7 @@ export default function IncomeSourceForm({
             <input
               {...register('sourceName')}
               placeholder="Contoh: PT Telkom Indonesia, Freelance UI Design"
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
+              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
             />
             {errors.sourceName && (
               <p className="text-xs text-red-400 font-medium">{errors.sourceName.message}</p>
@@ -165,17 +222,25 @@ export default function IncomeSourceForm({
                 Jenis Penghasilan
                 <Tooltip content="Menentukan regulasi pemotongan pajak (PPh Pasal 21, Pasal 23, Final PP 23, dll.)." />
               </label>
-              <select
-                {...register('sourceType')}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all appearance-none"
-              >
-                <option value="pekerjaan_tetap">Pekerjaan Tetap (Gaji/PPh 21)</option>
-                <option value="pekerjaan_bebas">Pekerjaan Bebas (Freelance)</option>
-                <option value="usaha">Usaha / UMKM (PP 23)</option>
-                <option value="sewa">Sewa Properti (Final 10%)</option>
-                <option value="investasi">Investasi (Dividen/Bunga)</option>
-                <option value="lainnya">Penghasilan Lainnya</option>
-              </select>
+              <Controller
+                name="sourceType"
+                control={control}
+                render={({ field }) => (
+                  <ModernSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    className="z-50"
+                    options={[
+                      { value: 'pekerjaan_tetap', label: 'Pekerjaan Tetap (Gaji/PPh 21)' },
+                      { value: 'pekerjaan_bebas', label: 'Pekerjaan Bebas (Freelance)' },
+                      { value: 'usaha', label: 'Usaha / UMKM (PP 23)' },
+                      { value: 'sewa', label: 'Sewa Properti (Final 10%)' },
+                      { value: 'investasi', label: 'Investasi (Dividen/Bunga)' },
+                      { value: 'lainnya', label: 'Penghasilan Lainnya' },
+                    ]}
+                  />
+                )}
+              />
               {errors.sourceType && (
                 <p className="text-xs text-red-400 font-medium">{errors.sourceType.message}</p>
               )}
@@ -189,7 +254,7 @@ export default function IncomeSourceForm({
               <input
                 type="number"
                 {...register('taxYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
               />
               {errors.taxYear && (
                 <p className="text-xs text-red-400 font-medium">{errors.taxYear.message}</p>
@@ -204,11 +269,19 @@ export default function IncomeSourceForm({
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-              <input
-                type="number"
-                {...register('annualIncome', { valueAsNumber: true })}
-                placeholder="0"
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+              <Controller
+                name="annualIncome"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumberInput(field.value)}
+                    onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                  />
+                )}
               />
             </div>
             {errors.annualIncome && (
@@ -216,17 +289,45 @@ export default function IncomeSourceForm({
             )}
           </div>
 
-          <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-blue-400 flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register('isTaxWithheld')}
-                  className="w-4 h-4 rounded text-blue-600 bg-slate-950 border-slate-800 focus:ring-blue-500 focus:ring-offset-slate-900 mr-2.5"
-                />
-                Sudah Dipotong Pajak Pihak Lain?
-                <Tooltip content="Centang jika pihak pemotong (pemberi kerja/klien) sudah memotong PPh Anda secara resmi dan menerbitkan Bukti Potong." />
+          {sourceType === 'usaha' && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                Tahun Mulai / Terdaftar UMKM
+                <Tooltip content="Dipakai untuk mengecek kelayakan masa pemanfaatan PPh Final UMKM PP 23 bagi Wajib Pajak Orang Pribadi." />
               </label>
+              <input
+                type="number"
+                {...register('registrationYearForUmkm', {
+                  setValueAs: (value) => value === '' ? null : Number(value),
+                })}
+                placeholder={`Contoh: ${activeTaxYear}`}
+                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+              />
+              {errors.registrationYearForUmkm && (
+                <p className="text-xs text-red-400 font-medium">{errors.registrationYearForUmkm.message}</p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                Status Pemotongan PPh
+              </label>
+              <Controller
+                name="isTaxWithheld"
+                control={control}
+                render={({ field }) => (
+                  <SchemeRadioPicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { value: false, label: 'Belum Dipotong', tooltip: 'Pajak akan dihitung dan dibayar sendiri pada akhir tahun.' },
+                      { value: true, label: 'Sudah Dipotong', tooltip: 'Pihak pemotong (pemberi kerja/klien) sudah memotong PPh Anda secara resmi dan menerbitkan Bukti Potong.' }
+                    ]}
+                  />
+                )}
+              />
             </div>
 
             {isTaxWithheld && (
@@ -240,7 +341,7 @@ export default function IncomeSourceForm({
                     {...register('npwpPemotong')}
                     maxLength={16}
                     placeholder="Hanya angka tanpa tanda baca"
-                    className="w-full bg-slate-950/40 border border-slate-800/80 text-white rounded-xl px-3.5 py-2 text-xs focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono tracking-wider"
+                    className="w-full bg-slate-950/40 border border-slate-800/80 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono tracking-wider"
                   />
                   {errors.npwpPemotong && (
                     <p className="text-xs text-red-400 font-medium">{errors.npwpPemotong.message}</p>
@@ -254,11 +355,19 @@ export default function IncomeSourceForm({
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                    <input
-                      type="number"
-                      {...register('withheldAmount', { valueAsNumber: true })}
-                      placeholder="0"
-                      className="w-full bg-slate-950/40 border border-slate-800/80 text-white rounded-xl pl-10 pr-4 py-2 text-xs focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono"
+                    <Controller
+                      name="withheldAmount"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberInput(field.value)}
+                          onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
+                          placeholder="0"
+                          className="w-full bg-slate-950/40 border border-slate-800/80 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono"
+                        />
+                      )}
                     />
                   </div>
                   {errors.withheldAmount && (
@@ -275,7 +384,7 @@ export default function IncomeSourceForm({
               {...register('notes')}
               placeholder="Tuliskan catatan tambahan atau keterangan bukti potong..."
               rows={2}
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none font-medium"
+              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none font-medium"
             />
           </div>
 

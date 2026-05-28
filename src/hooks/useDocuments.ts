@@ -94,9 +94,24 @@ export function useUploadDocument() {
       }
 
       // 2. Insert metadata to documents table
+      const CATEGORY_PREFIXES: Record<string, string> = {
+        'bukti_potong': 'BP',
+        'faktur_pajak': 'FP',
+        'spt_tahunan': 'SPT',
+        'nota_transaksi': 'NOTA',
+        'laporan_keuangan': 'LK',
+        'rekening_koran': 'RK',
+        'surat_keterangan': 'SK',
+        'identitas': 'ID',
+        'lainnya': 'DOC'
+      };
+      const prefix = CATEGORY_PREFIXES[category] || 'DOC';
+      const cleanOriginalName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const newFileName = `${prefix}_${cleanOriginalName}`;
+
       const payload = {
         user_id: user.id,
-        file_name: file.name,
+        file_name: newFileName,
         file_path: filePath,
         file_size: file.size,
         file_type: file.type,
@@ -163,8 +178,9 @@ export async function getDocumentUrl(filePath: string): Promise<string> {
     .createSignedUrl(filePath, 60 * 60); // 1 hour valid
 
   if (error) {
-    console.error('Error getting signed url:', error);
-    return '';
+    console.error('Error getting signed url, falling back to public URL:', error);
+    const { data: publicData } = supabase.storage.from('tax-documents').getPublicUrl(filePath);
+    return publicData.publicUrl;
   }
   return data.signedUrl;
 }

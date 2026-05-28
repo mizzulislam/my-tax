@@ -90,9 +90,15 @@ export default function TaxAssistantChat() {
       }));
 
       // 4. Fetch from API (Streaming)
+      const { data: sessionData } = await supabase.auth.getSession();
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionData.session?.access_token
+            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+            : {}),
+        },
         body: JSON.stringify({
           message: userMessageText,
           context: profile,
@@ -155,7 +161,7 @@ export default function TaxAssistantChat() {
               </div>
               <div>
                 <h3 className="font-bold text-white text-sm">Tax Feyments</h3>
-                <p className="text-xs text-blue-400">Asisten Konsultan Pajak Ahli</p>
+                <p className="text-xs text-blue-400">Asisten Edukasi Pajak</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
@@ -169,7 +175,7 @@ export default function TaxAssistantChat() {
                 <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                 </div>
-                <p>Halo! Saya adalah Taxologist AI.</p>
+                <p>Halo! Saya adalah asisten edukasi pajak.</p>
                 <p className="mt-1 opacity-80 leading-relaxed">Saya dapat membaca draf data Anda dan menjawab pertanyaan seputar regulasi pajak UU HPP terkini.</p>
                 <Link 
                   href="/dashboard/assistant" 
@@ -275,7 +281,7 @@ export default function TaxAssistantChat() {
                             return <thead className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-b border-slate-700 text-white select-none">{children}</thead>;
                           },
                           th({ children }) {
-                            return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400">{children}</th>;
+                            return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400 text-center">{children}</th>;
                           },
                           td({ children }) {
                             const text = Array.isArray(children) 
@@ -413,7 +419,7 @@ export default function TaxAssistantChat() {
                           return <thead className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-b border-slate-700 text-white select-none">{children}</thead>;
                         },
                         th({ children }) {
-                          return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400">{children}</th>;
+                          return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400 text-center">{children}</th>;
                         },
                         td({ children }) {
                           const text = Array.isArray(children) 

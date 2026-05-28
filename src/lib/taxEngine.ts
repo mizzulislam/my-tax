@@ -350,7 +350,7 @@ export function calculatePph21TidakFinal(
     finalRate = finalRate * 1.2;
   }
 
-  let taxDue = dpp * finalRate;
+  const taxDue = dpp * finalRate;
 
   return { dpp, taxDue: Math.round(taxDue), ratePercent: hasNpwp ? ratePercent : ratePercent * 1.2 };
 }
@@ -553,7 +553,7 @@ export function calculateUmkmTax(annualOmzet: number): number {
   return (annualOmzet - 500000000) * 0.005;
 }
 
-export type VatMode = '11_percent' | '12_percent';
+export type VatMode = 'non_luxury_2025' | 'standard' | '11_percent' | '12_percent';
 
 export interface VatResult {
   dpp: number;
@@ -567,7 +567,7 @@ export interface VatResult {
  */
 export function calculateVat(amount: number, mode: VatMode = '11_percent', includeTax = false): VatResult {
   const safeAmount = Math.max(0, amount);
-  const rate = mode === '11_percent' ? 0.11 : 0.12;
+  const rate = mode === 'standard' || mode === '12_percent' ? 0.12 : 0.11;
   
   let dpp = safeAmount;
   if (includeTax) {

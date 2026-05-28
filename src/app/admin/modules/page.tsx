@@ -5,6 +5,7 @@ import Link from 'next/link';
 import RoleGuard from '@/components/RoleGuard';
 import { useAdminModules, useDeleteAdminModule, useSaveAdminModule, useSeedAdminModules } from '@/hooks/admin/useAdminApi';
 import { CmsTaxModule, CmsTaxModuleInput } from '@/types/taxpayer';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 import { useAlert } from '@/contexts/AlertContext';
 
 
@@ -273,27 +274,27 @@ export default function AdminModulesPage() {
                 <TextInput label="Kategori" value={form.category} onChange={(value) => updateForm('category', value)} placeholder="PPh" />
                 <label className="space-y-2">
                   <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">Tingkat</span>
-                  <select
+                  <ModernSelect
                     value={form.difficulty}
-                    onChange={(event) => updateForm('difficulty', event.target.value as CmsTaxModuleInput['difficulty'])}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-blue-500"
-                  >
-                    <option value="dasar">Dasar</option>
-                    <option value="menengah">Menengah</option>
-                    <option value="lanjut">Lanjut</option>
-                  </select>
+                    onChange={(val) => updateForm('difficulty', val as CmsTaxModuleInput['difficulty'])}
+                    options={[
+                      { value: 'dasar', label: 'Dasar' },
+                      { value: 'menengah', label: 'Menengah' },
+                      { value: 'lanjut', label: 'Lanjut' }
+                    ]}
+                  />
                 </label>
                 <label className="space-y-2">
                   <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">Status Belajar</span>
-                  <select
+                  <ModernSelect
                     value={form.status}
-                    onChange={(event) => updateForm('status', event.target.value as CmsTaxModuleInput['status'])}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-blue-500"
-                  >
-                    <option value="belum">Belum</option>
-                    <option value="sedang">Sedang</option>
-                    <option value="selesai">Selesai</option>
-                  </select>
+                    onChange={(val) => updateForm('status', val as CmsTaxModuleInput['status'])}
+                    options={[
+                      { value: 'belum', label: 'Belum' },
+                      { value: 'sedang', label: 'Sedang' },
+                      { value: 'selesai', label: 'Selesai' }
+                    ]}
+                  />
                 </label>
                 <TextInput label="Icon" value={form.icon} onChange={(value) => updateForm('icon', value)} placeholder="file, scale, calculator" />
                 <TextInput label="Urutan" value={String(form.orderIndex)} onChange={(value) => updateForm('orderIndex', Number(value || 0))} />

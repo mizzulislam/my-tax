@@ -76,7 +76,7 @@ export function useMutateProfile() {
       if (error) throw new Error(error.message);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, profileData) => {
       // Sinkronisasi data ke Zustand store global secara real-time
       setProfile({
         fullName: profileData.fullName,

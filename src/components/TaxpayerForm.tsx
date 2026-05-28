@@ -1,10 +1,11 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { taxpayerProfileSchema, TaxpayerProfile } from '@/types/taxpayer';
 import { useMutateProfile } from '@/hooks/useMutateProfile';
 import { useRouter } from 'next/navigation';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
 export default function TaxpayerForm() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function TaxpayerForm() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<TaxpayerProfile>({
@@ -47,15 +49,22 @@ export default function TaxpayerForm() {
           {errors.fullName && <p className="text-xs text-red-400 font-medium">{errors.fullName.message}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 z-50 relative">
           <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Jenis Wajib Pajak</label>
-          <select
-            {...register('taxpayerType')}
-            className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all appearance-none"
-          >
-            <option value="pribadi">Orang Pribadi</option>
-            <option value="badan">Badan / Perusahaan</option>
-          </select>
+          <Controller
+            name="taxpayerType"
+            control={control}
+            render={({ field }) => (
+              <ModernSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { value: 'pribadi', label: 'Orang Pribadi' },
+                  { value: 'badan', label: 'Badan / Perusahaan' },
+                ]}
+              />
+            )}
+          />
           {errors.taxpayerType && <p className="text-xs text-red-400 font-medium">{errors.taxpayerType.message}</p>}
         </div>
 

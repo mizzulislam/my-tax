@@ -557,7 +557,7 @@ export const TAX_LEARNING_MODULES: TaxLearningModule[] = [
     nextSteps: [
       'Pelajari KUP untuk memahami konsekuensi submit, pembetulan, dan batas waktu.',
       'Pelajari PPN atau PPh POTPUT jika menggunakan faktur atau bukti potong elektronik.',
-      'Gunakan fitur e-Billing aplikasi ini sebagai simulasi alur pembayaran.',
+      'Gunakan halaman draft pembayaran aplikasi ini hanya untuk menyiapkan data sebelum membuat kode billing resmi di DJP/Coretax.',
     ],
     caution: 'Tampilan dan proses aplikasi pajak dapat berubah mengikuti implementasi sistem. Cocokkan kembali dengan panduan resmi DJP saat melakukan pelaporan nyata.',
   },

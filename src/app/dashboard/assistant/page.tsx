@@ -58,7 +58,16 @@ interface CustomPersona {
 
 const CUSTOM_PERSONA_ICONS = ['✨', '🏢', '🏪', '📈', '💹', '🏠', '🧾', '⚖️', '🩺', '🌾', '🚚', '🛒', '🏭', '🎨', '💻', '📚'];
 
-
+function ChatMigrationNotice() {
+  return (
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-5 text-sm text-amber-100">
+      <h3 className="font-black text-white">Tabel chat belum tersedia</h3>
+      <p className="mt-2 leading-6 text-amber-100/80">
+        Jalankan migrasi chat sessions dan chat messages sebelum memakai riwayat obrolan AI.
+      </p>
+    </div>
+  );
+}
 
 // Komponen Kuis Interaktif Kustom (ChatQuiz) - Gamified Multi-Question Wizard (Screenshot 1-4)
 function ChatQuiz({ content, isGenerating }: { content: string; isGenerating?: boolean }) {
@@ -927,7 +936,7 @@ export default function AssistantPage() {
                 <h1 className="text-base md:text-lg font-black text-white leading-tight flex items-center gap-1.5 select-none">
                   <span className="text-blue-400 font-extrabold">Feyn</span> AI
                 </h1>
-                <p className="text-[10px] md:text-xs text-slate-500 font-medium select-none">Asisten Konsultan Pajak Analogis</p>
+                <p className="text-[10px] md:text-xs text-slate-500 font-medium select-none">Asisten Edukasi Pajak Analogis</p>
               </div>
             </div>
           </div>

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { MaskedTaxData } from '@/components/admin/MaskedTaxData';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 import RoleGuard from '@/components/RoleGuard';
 import {
   useAdminDocuments,
@@ -24,7 +26,7 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]['id'];
 
-const roles: UserRole[] = ['user', 'consultant', 'admin'];
+const roles: UserRole[] = ['user', 'admin'];
 
 type RoleChangeRequest = {
   user: AdminUser;
@@ -203,19 +205,18 @@ function UsersTab() {
             placeholder="Cari nama atau NPWP"
             className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
           />
-          <select
+          <ModernSelect
             value={role}
-            onChange={(event) => {
-              setRole(event.target.value);
+            onChange={(val) => {
+              setRole(val);
               setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-          >
-            <option value="">Semua role</option>
-            {roles.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </select>
+            className="md:w-48"
+            options={[
+              { value: '', label: 'Semua role' },
+              ...roles.map((item) => ({ value: item, label: item }))
+            ]}
+          />
         </div>
 
         <div className="overflow-x-auto">
@@ -237,18 +238,17 @@ function UsersTab() {
                     <div className="font-bold text-white">{user.fullName || 'Tanpa nama'}</div>
                     <div className="text-xs text-slate-500">{user.email || user.id}</div>
                   </td>
-                  <td className="py-4 pr-4 font-mono text-slate-300">{user.npwp || '-'}</td>
                   <td className="py-4 pr-4">
-                    <select
+                    <MaskedTaxData encryptedValue={user.npwp} type="npwp" userId={user.id} />
+                  </td>
+                  <td className="py-4 pr-4">
+                    <ModernSelect
                       value={user.role}
-                      onChange={(event) => handleRoleChange(user, event.target.value as UserRole)}
+                      onChange={(val) => handleRoleChange(user, val as UserRole)}
                       disabled={updateRole.isPending}
-                      className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none"
-                    >
-                      {roles.map((item) => (
-                        <option key={item} value={item}>{item}</option>
-                      ))}
-                    </select>
+                      className="w-36"
+                      options={roles.map((item) => ({ value: item, label: item }))}
+                    />
                   </td>
                   <td className="py-4 pr-4 text-slate-400">{formatDate(user.createdAt)}</td>
                 </tr>
@@ -350,31 +350,31 @@ function AuditTab() {
           placeholder="Cari email/action"
           className="md:col-span-2 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none"
         />
-        <select
+        <ModernSelect
           value={filters.action}
-          onChange={(event) => {
-            setFilters((current) => ({ ...current, action: event.target.value }));
+          onChange={(val) => {
+            setFilters((current) => ({ ...current, action: val }));
             setPage(1);
           }}
-          className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none"
-        >
-          <option value="">Semua action</option>
-          {actions.map((action) => <option key={action} value={action}>{action}</option>)}
-        </select>
-        <select
+          options={[
+            { value: '', label: 'Semua action' },
+            ...actions.map((action) => ({ value: action, label: action }))
+          ]}
+        />
+        <ModernSelect
           value={filters.severity}
-          onChange={(event) => {
-            setFilters((current) => ({ ...current, severity: event.target.value }));
+          onChange={(val) => {
+            setFilters((current) => ({ ...current, severity: val }));
             setPage(1);
           }}
-          className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none"
-        >
-          <option value="">Semua severity</option>
-          <option value="info">info</option>
-          <option value="warning">warning</option>
-          <option value="error">error</option>
-          <option value="critical">critical</option>
-        </select>
+          options={[
+            { value: '', label: 'Semua severity' },
+            { value: 'info', label: 'info' },
+            { value: 'warning', label: 'warning' },
+            { value: 'error', label: 'error' },
+            { value: 'critical', label: 'critical' }
+          ]}
+        />
         <input
           type="date"
           value={filters.startDate}
@@ -430,18 +430,20 @@ function DocumentsTab() {
     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-5">
       <div className="flex justify-between gap-3">
         <h3 className="text-sm font-black text-white uppercase tracking-wider">Dokumen Verifikasi</h3>
-        <select
-          value={status}
-          onChange={(event) => {
-            setStatus(event.target.value);
-            setPage(1);
-          }}
-          className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white outline-none"
-        >
-          <option value="pending">Pending</option>
-          <option value="verified">Terverifikasi</option>
-          <option value="all">Semua</option>
-        </select>
+        <div className="w-48">
+          <ModernSelect
+            value={status}
+            onChange={(val) => {
+              setStatus(val);
+              setPage(1);
+            }}
+            options={[
+              { value: 'pending', label: 'Pending' },
+              { value: 'verified', label: 'Terverifikasi' },
+              { value: 'all', label: 'Semua' }
+            ]}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
