@@ -21,7 +21,7 @@ export function buildBillingVerificationPayload(input: {
   reportId?: string | null;
 }) {
   return JSON.stringify({
-    issuer: 'Tax Feyments App',
+    issuer: 'My Tax App',
     type: 'MOCK_E_BILLING',
     billingCode: input.billingCode,
     amount: input.amount,

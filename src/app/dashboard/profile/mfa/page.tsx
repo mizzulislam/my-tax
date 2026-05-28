@@ -64,7 +64,7 @@ export default function MfaSetupPage() {
 
         const { data, error: enrollError } = await supabase.auth.mfa.enroll({
           factorType: 'totp',
-          friendlyName: `Tax Feyments Authenticator ${Date.now()}`,
+          friendlyName: `My Tax Authenticator ${Date.now()}`,
         });
         if (enrollError) throw enrollError;
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   PTKP_VALUES,
   calculateAnnualPph21,
@@ -17,6 +18,8 @@ import {
   calculateStampDuty,
   calculateTaxPenalty,
   calculateVat,
+  calculatePph21Final,
+  calculatePph21TidakFinal,
   getMonthlyTerRate,
   getTerCategory,
   type LocalTaxObject,
@@ -29,11 +32,31 @@ import {
   type PtkpStatus,
   type VatMode,
   type CorporateTaxMode,
+  type Pph21FinalObject,
+  type Pph21TidakFinalCategory,
+  type Pph21TidakFinalJenis,
 } from '@/lib/taxEngine';
 import { useMutateReport } from '@/hooks/useMutateReport';
 import Tooltip from './Tooltip';
+import OcrUploader from './OcrUploader';
 
 type TaxPeriod = '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
+type EmploymentStatus = '21-100-01' | '21-100-02';
+type CalculationScheme = 'gross' | 'gross_up';
+type JenisPemotongan = 'bulanan' | 'final' | 'tidak_final' | 'tahunan';
+
+const jenisPemotonganOptions = [
+  { value: 'bulanan', label: 'PPh 21 Bulanan' },
+  { value: 'final', label: 'PPh 21 Final' },
+  { value: 'tidak_final', label: 'PPh 21 Tidak Final' },
+  { value: 'tahunan', label: 'PPh 21 Tahunan' },
+];
+
+type SaveDialog = {
+  title: string;
+  message: string;
+  label: string;
+};
 export type CalculatorType = 'pph21' | 'ppn' | 'ppnbm' | 'pph23' | 'pphUnifikasi' | 'pphFinal' | 'pph26' | 'pphBadan' | 'bphtb' | 'pbbP2' | 'pajakDaerah' | 'sanksiPajak' | 'beaMeterai';
 
 export const calculatorOptions: Array<{
@@ -86,7 +109,7 @@ const taxPeriodOptions: SelectOption[] = [
   { value: '09', label: '09 - September' },
   { value: '10', label: '10 - Oktober' },
   { value: '11', label: '11 - November' },
-  { value: '12', label: '12 - Desember / Tahunan' },
+  { value: '12', label: '12 - Desember' },
 ];
 
 const ptkpOptions: SelectOption[] = [
@@ -98,6 +121,11 @@ const ptkpOptions: SelectOption[] = [
   { value: 'K/1', label: 'K/1 - Kawin, 1 Tanggungan (Rp 63.000.000)' },
   { value: 'K/2', label: 'K/2 - Kawin, 2 Tanggungan (Rp 67.500.000)' },
   { value: 'K/3', label: 'K/3 - Kawin, 3 Tanggungan (Rp 72.000.000)' },
+];
+
+const employmentStatusOptions: SelectOption[] = [
+  { value: '21-100-01', label: '21-100-01 (Pegawai Tetap)' },
+  { value: '21-100-02', label: '21-100-02 (Penerima Pensiun Berkala)' },
 ];
 
 const vatModeOptions: SelectOption[] = [
@@ -136,6 +164,37 @@ const finalTaxOptions: SelectOption[] = [
   { value: 'umkm_entity', label: 'UMKM Badan - 0,5%' },
   { value: 'land_building_rent', label: 'Sewa Tanah/Bangunan - 10%' },
   { value: 'land_building_transfer', label: 'Pengalihan Tanah/Bangunan - 2,5%' },
+];
+
+const pph21FinalOptions: SelectOption[] = [
+  { value: 'pesangon', label: 'Uang Pesangon' },
+  { value: 'pensiun', label: 'Uang Manfaat Pensiun Sekaligus' },
+  { value: 'honorarium_apbn', label: 'Honorarium/Imbalan PNS Beban APBN/APBD' },
+];
+
+const pnsGolonganOptions: SelectOption[] = [
+  { value: 'I_II', label: 'Gol. I & II / Tamtama & Bintara (0%)' },
+  { value: 'III', label: 'Gol. III / Perwira Pertama (5%)' },
+  { value: 'IV', label: 'Gol. IV / Perwira Menengah & Tinggi (15%)' },
+];
+
+const pph21TidakFinalOptions: SelectOption[] = [
+  { value: '21-100-03', label: '21-100-03 Pegawai Tidak Tetap' },
+  { value: '21-100-04', label: '21-100-04 Distributor Pemasaran Berjenjang' },
+  { value: '21-100-05', label: '21-100-05 Agen Asuransi' },
+  { value: '21-100-06', label: '21-100-06 Penjaja Barang Dagangan' },
+  { value: '21-100-07', label: '21-100-07 Tenaga Ahli' },
+  { value: '21-100-08', label: '21-100-08 Seniman' },
+  { value: '21-100-09', label: '21-100-09 Bukan Pegawai Lainnya' },
+  { value: '21-100-10', label: '21-100-10 Anggota Dewan Komisaris...' },
+  { value: '21-100-11', label: '21-100-11 Mantan Pegawai...' },
+  { value: '21-100-12', label: '21-100-12 Pegawai yang Melakukan Penarikan...' },
+  { value: '21-100-13', label: '21-100-13 Peserta Kegiatan' },
+];
+
+const pph21TidakFinalJenisOptions: SelectOption[] = [
+  { value: 'non_bulanan', label: '21-100-03 Upah Pegawai Tidak Tetap Non Bulanan' },
+  { value: 'bulanan', label: '21-100-03 Upah Pegawai Tidak Tetap Bulanan' },
 ];
 
 const pph26Options: SelectOption[] = [
@@ -210,7 +269,7 @@ function ModernSelect({
       <button
         type="button"
         onClick={() => onToggle(open ? null : id)}
-        className="group flex w-full items-center justify-between gap-3 rounded-md border border-slate-700/55 bg-slate-950/40 px-3.5 py-2.5 text-left text-sm text-white outline-none transition hover:border-blue-500/50 hover:bg-slate-950/70 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/25"
+        className="group flex w-full items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/50 px-3.5 py-3 text-left text-sm text-white outline-none transition hover:border-blue-500/50 hover:bg-slate-950/70 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/25"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -227,7 +286,7 @@ function ModernSelect({
 
       {open && (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-blue-500/25 bg-slate-950/95 p-1.5 shadow-2xl shadow-blue-950/30 backdrop-blur-xl">
-          <div className="max-h-64 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(59,130,246,0.45)_rgba(15,23,42,0.8)]" role="listbox">
+          <div className="max-h-44 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(59,130,246,0.45)_rgba(15,23,42,0.8)]" role="listbox">
             {options.map((option) => {
               const active = option.value === value;
 
@@ -349,6 +408,53 @@ function YearCombobox({
   );
 }
 
+
+function SchemeRadioPicker<T extends string | boolean>({
+  value,
+  onChange,
+  options
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; tooltip?: string }[];
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Skema Perhitungan">
+      {options.map((option, index) => {
+        const selected = value === option.value;
+        return (
+          <div
+            key={String(option.value) + index}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onChange(option.value);
+              }
+            }}
+            tabIndex={0}
+            className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left outline-none transition focus:ring-2 focus:ring-blue-500/30 ${
+              selected
+                ? 'border-blue-500/70 bg-blue-500/10 text-white shadow-lg shadow-blue-950/20'
+                : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-blue-500/45 hover:bg-slate-950/70'
+            }`}
+            role="radio"
+            aria-checked={selected}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${selected ? 'border-blue-400' : 'border-slate-500'}`}>
+                {selected && <span className="h-2.5 w-2.5 rounded-full bg-blue-400"></span>}
+              </span>
+              <span className="truncate text-sm font-bold">{option.label}</span>
+            </span>
+            {option.tooltip && <Tooltip content={option.tooltip} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface TaxCalculatorFormProps {
   calculatorType: CalculatorType;
 }
@@ -357,30 +463,73 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const { mutate, isPending, error: serverError } = useMutateReport();
   const [step, setStep] = useState(1);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
+  const [saveDialog, setSaveDialog] = useState<SaveDialog | null>(null);
 
   useEffect(() => {
     setStep(1);
     setOpenSelect(null);
   }, [calculatorType]);
 
+  useEffect(() => {
+    if (!saveDialog) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSaveDialog(null);
+      }
+    };
+
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [saveDialog]);
+
   // Step 1: Penghasilan Bruto
   const [taxYear, setTaxYear] = useState(2026);
   const [taxPeriod, setTaxPeriod] = useState<TaxPeriod>('12');
+  const [employmentStatus, setEmploymentStatus] = useState<EmploymentStatus>('21-100-01');
   const [gaji, setGaji] = useState<number>(0);
   const [tunjangan, setTunjangan] = useState<number>(0);
   const [bonus, setBonus] = useState<number>(0);
 
   // Step 2: Pengurang & PTKP
+  const [calculationScheme, setCalculationScheme] = useState<CalculationScheme>('gross');
   const [iuranPensiun, setIuranPensiun] = useState<number>(0);
   const [zakatSumbangan, setZakatSumbangan] = useState<number>(0);
   const [previousNetIncome, setPreviousNetIncome] = useState<number>(0);
   const [withheldTaxCredit, setWithheldTaxCredit] = useState<number>(0);
   const [ptkpStatus, setPtkpStatus] = useState<PtkpStatus>('TK/0');
 
+  // PPh 21 Tahunan Specific State
+  const [jenisPemotongan, setJenisPemotongan] = useState<JenisPemotongan>('bulanan');
+  const [tahunanGaji, setTahunanGaji] = useState<number>(0);
+  const [tahunanTunjanganPph, setTahunanTunjanganPph] = useState<number>(0);
+  const [tahunanTunjanganLainnya, setTahunanTunjanganLainnya] = useState<number>(0);
+  const [tahunanHonorarium, setTahunanHonorarium] = useState<number>(0);
+  const [tahunanPremiAsuransi, setTahunanPremiAsuransi] = useState<number>(0);
+  const [tahunanNatura, setTahunanNatura] = useState<number>(0);
+  const [tahunanBonus, setTahunanBonus] = useState<number>(0);
+
+  // PPh 21 Final & Tidak Final Specific State
+  const [finalTaxObjectPph21, setFinalTaxObjectPph21] = useState<Pph21FinalObject>('pesangon');
+  const [finalGrossIncome, setFinalGrossIncome] = useState<number>(0);
+  const [pnsGolongan, setPnsGolongan] = useState<string>('III');
+  
+  const [tidakFinalCategory, setTidakFinalCategory] = useState<Pph21TidakFinalCategory>('21-100-03');
+  const [tidakFinalJenis, setTidakFinalJenis] = useState<Pph21TidakFinalJenis>('non_bulanan');
+  const [tidakFinalGrossIncome, setTidakFinalGrossIncome] = useState<number>(0);
+  const [tidakFinalHasNpwp, setTidakFinalHasNpwp] = useState<boolean>(true);
+  const [tidakFinalBerkesinambungan, setTidakFinalBerkesinambungan] = useState<boolean>(false);
+
   // Kalkulator pajak lainnya
   const [transactionAmount, setTransactionAmount] = useState<number>(0);
-  const [vatMode, setVatMode] = useState<VatMode>('non_luxury_2025');
+  const [includeVat, setIncludeVat] = useState<boolean>(false);
+  const [vatMode, setVatMode] = useState<VatMode>('11_percent');
+  const [includePpnbm, setIncludePpnbm] = useState<boolean>(false);
   const [ppnbmRateBand, setPpnbmRateBand] = useState<PpnBmRateBand>('10');
+  const [isPph23GrossUp, setIsPph23GrossUp] = useState<boolean>(false);
+  const [isPphUnifikasiGrossUp, setIsPphUnifikasiGrossUp] = useState<boolean>(false);
+  const [isPphFinalGrossUp, setIsPphFinalGrossUp] = useState<boolean>(false);
+  const [isPph26GrossUp, setIsPph26GrossUp] = useState<boolean>(false);
   const [pph23Object, setPph23Object] = useState<Pph23Object>('service_rent');
   const [withoutNpwp, setWithoutNpwp] = useState(false);
   const [pphUnificationObject, setPphUnificationObject] = useState<PphUnificationObject>('pph23_service_rent');
@@ -408,24 +557,53 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   };
 
   // Perhitungan Otomatis
-  const grossIncome = gaji + tunjangan + bonus;
-  const isAnnual = taxPeriod === '12';
+  const grossIncome = jenisPemotongan === 'tahunan'
+    ? tahunanGaji + tahunanTunjanganPph + tahunanTunjanganLainnya + tahunanHonorarium + tahunanPremiAsuransi + tahunanNatura + tahunanBonus
+    : gaji + tunjangan + bonus;
+  const isGrossUp = calculationScheme === 'gross_up';
+  const isAnnual = jenisPemotongan === 'tahunan' || taxPeriod === '12';
 
   // Perhitungan Pajak Terutang berdasarkan jenis periode
   let estimatedTax = 0;
   let biayaJabatan = 0;
   let totalPengurang = 0;
+  let pph21TaxAllowance = 0;
   
   const ptkpValue = PTKP_VALUES[ptkpStatus];
   let pkp = 0;
-  const annualPph21Result = calculateAnnualPph21({
+  const annualPph21BaseInput = {
     grossIncome,
     ptkpStatus,
     pensionContribution: iuranPensiun,
     religiousContribution: zakatSumbangan,
     previousNetIncome,
     withheldTaxCredit,
-  });
+  };
+  let annualPph21Result = calculateAnnualPph21(annualPph21BaseInput);
+
+  if (isGrossUp) {
+    if (isAnnual) {
+      for (let iteration = 0; iteration < 24; iteration += 1) {
+        const nextResult = calculateAnnualPph21({
+          ...annualPph21BaseInput,
+          grossIncome: grossIncome + pph21TaxAllowance,
+        });
+        const nextAllowance = nextResult.taxDue;
+        annualPph21Result = nextResult;
+
+        if (nextAllowance === pph21TaxAllowance) break;
+        pph21TaxAllowance = nextAllowance;
+      }
+    } else {
+      for (let iteration = 0; iteration < 24; iteration += 1) {
+        const nextAllowance = calculateMonthlyTerTax(grossIncome + pph21TaxAllowance, ptkpStatus);
+        if (nextAllowance === pph21TaxAllowance) break;
+        pph21TaxAllowance = nextAllowance;
+      }
+    }
+  }
+
+  const pph21TaxableGrossIncome = grossIncome + pph21TaxAllowance;
 
   if (isAnnual) {
     biayaJabatan = annualPph21Result.jobExpense;
@@ -434,17 +612,17 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
     estimatedTax = annualPph21Result.annualTax;
   } else {
     // Bulanan dengan skema TER PPh 21 PP 58/2023
-    estimatedTax = calculateMonthlyTerTax(grossIncome, ptkpStatus);
+    estimatedTax = calculateMonthlyTerTax(pph21TaxableGrossIncome, ptkpStatus);
   }
 
   const terCategory = getTerCategory(ptkpStatus);
-  const terRate = getMonthlyTerRate(grossIncome, ptkpStatus);
-  const vatResult = calculateVat(transactionAmount, vatMode);
-  const ppnbmResult = calculatePpnBm(transactionAmount, ppnbmRateBand);
-  const pph23Result = calculatePph23(transactionAmount, pph23Object, withoutNpwp);
-  const pphUnificationResult = calculatePphUnification(transactionAmount, pphUnificationObject, withoutNpwp);
-  const pph26Result = calculatePph26(transactionAmount, pph26Object, treatyRatePercent / 100);
-  const finalTaxResult = calculateFinalTax(transactionAmount, finalTaxObject);
+  const terRate = getMonthlyTerRate(pph21TaxableGrossIncome, ptkpStatus);
+  const vatResult = calculateVat(transactionAmount, vatMode, includeVat);
+  const ppnbmResult = calculatePpnBm(transactionAmount, ppnbmRateBand, includePpnbm);
+  const pph23Result = calculatePph23(transactionAmount, pph23Object, withoutNpwp, isPph23GrossUp);
+  const pphUnificationResult = calculatePphUnification(transactionAmount, pphUnificationObject, withoutNpwp, isPphUnifikasiGrossUp);
+  const pph26Result = calculatePph26(transactionAmount, pph26Object, treatyRatePercent / 100, isPph26GrossUp);
+  const finalTaxResult = calculateFinalTax(transactionAmount, finalTaxObject, isPphFinalGrossUp);
   const corporateTaxResult = calculateCorporateIncomeTax(corporateTaxableIncome, corporateGrossTurnover, useCorporateFacility, corporateTaxMode);
   const bphtbResult = calculateBphtb(transactionAmount, propertyNjop, bphtbNpoptkp);
   const pbbP2Result = calculatePbbP2(transactionAmount, pbbNjoptkp);
@@ -452,6 +630,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const taxPenaltyResult = calculateTaxPenalty(transactionAmount, taxPenaltyObject, penaltyMonths);
   const stampDuty = calculateStampDuty(transactionAmount);
   const pph21DisplayTax = isAnnual ? annualPph21Result.taxDue : estimatedTax;
+  const employmentStatusLabel = employmentStatusOptions.find((option) => option.value === employmentStatus)?.label || 'Pegawai Tetap';
+  const calculationSchemeLabel = isGrossUp ? 'Gross Up' : 'Gross';
   const selectedCalculatorOption = calculatorOptions.find((option) => option.id === calculatorType);
   const stepTracker = (
     <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1.5">
@@ -473,11 +653,13 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
       status,
     }, {
       onSuccess: () => {
-        alert(
-          status === 'submitted' 
-            ? 'Laporan Resmi Perpajakan Anda Berhasil Disubmit!' 
-            : 'Draf Simulasi Berhasil Disimpan!'
-        );
+        setSaveDialog({
+          title: status === 'submitted' ? 'Laporan Terkirim' : 'Draf Tersimpan',
+          message: status === 'submitted'
+            ? 'Laporan resmi perpajakan Anda berhasil disubmit dan siap dipantau dari riwayat.'
+            : 'Simulasi pajak berhasil disimpan sebagai draf. Anda bisa melanjutkannya kembali kapan saja.',
+          label: status === 'submitted' ? 'Selesai' : 'OK',
+        });
         // Reset Form ke Step 1
         setStep(1);
         setGaji(0);
@@ -487,23 +669,71 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
         setZakatSumbangan(0);
         setPreviousNetIncome(0);
         setWithheldTaxCredit(0);
+        setEmploymentStatus('21-100-01');
+        setCalculationScheme('gross');
         setPtkpStatus('TK/0');
       }
     });
   };
 
   return (
-    <div className="relative w-full self-start overflow-hidden rounded-3xl p-[1px] shadow-2xl shadow-black/20">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/45 via-indigo-500/10 to-slate-800/40 opacity-70"></div>
-      
-      <div className="relative flex flex-col rounded-[23px] bg-slate-900/85 p-6 backdrop-blur-2xl md:p-8">
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-blue-400/50 via-slate-700/30 to-transparent"></div>
+    <>
+      {saveDialog && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-md animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tax-save-dialog-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSaveDialog(null);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-sm overflow-visible rounded-3xl p-[1px] shadow-2xl shadow-black/50 animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
+            <div className="pointer-events-none absolute -inset-[2px] rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.58),rgba(14,165,233,0.18)_40%,rgba(99,102,241,0.28)_68%,rgba(15,23,42,0.1))] opacity-80 blur-md"></div>
+            <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.74),rgba(30,64,175,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]"></div>
+            <div className="relative rounded-[23px] bg-slate-950/95 p-5 shadow-[inset_0_1px_0_rgba(148,163,184,0.1)] backdrop-blur-2xl">
+              <div className="flex items-start gap-4">
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-400/30 bg-blue-500/10 text-blue-300 shadow-[0_0_24px_rgba(59,130,246,0.25)]">
+                  <div className="absolute inset-2 rounded-full bg-blue-400/20 blur-md"></div>
+                  <svg className="relative h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="m5 13 4 4L19 7" />
+                  </svg>
+                </div>
 
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300/80">Berhasil</p>
+                  <h3 id="tax-save-dialog-title" className="mt-1 text-lg font-black tracking-tight text-white">
+                    {saveDialog.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-slate-400">
+                    {saveDialog.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSaveDialog(null)}
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-950/30 transition-all hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                >
+                  {saveDialog.label}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <div className="relative w-full self-start bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl">
         <div className="relative z-10 mb-8">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator Pajak Terpadu</h2>
-              <p className="text-xs text-slate-400 mt-1">Masukkan dasar pengenaan, lalu lihat estimasi pajak dan rincian tarifnya.</p>
+              <p className="text-xs text-slate-400 mt-1">Masukkan dasar pengenaan, lalu lihat pajak terutang dan rincian tarifnya.</p>
             </div>
           </div>
 
@@ -514,7 +744,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 {[
                   'Pilih jenis pajak',
                   'Isi dasar pengenaan',
-                  'Baca estimasi',
+                  'Baca perhitungan',
                 ].map((item, index) => (
                   <div key={item} className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/45 px-3 py-2">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500/25 bg-blue-500/10 text-[9px] font-black text-blue-300">{index + 1}</span>
@@ -534,6 +764,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
             </div>
           </div>
         </div>
+        
 
         {calculatorType !== 'pph21' ? (
           <div className="relative z-10 space-y-6">
@@ -542,66 +773,110 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 Kalkulator {selectedCalculatorOption?.title ?? 'Pajak'}
               </h2>
               <p className="mt-1 text-xs text-slate-400">
-                {selectedCalculatorOption?.subtitle ?? 'Masukkan dasar pengenaan, lalu lihat estimasi pajaknya.'}
+                {selectedCalculatorOption?.subtitle ?? 'Masukkan dasar pengenaan, lalu lihat pajak terutangnya.'}
               </p>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                    Dasar Pengenaan / Nilai Transaksi
-                    <Tooltip content="Masukkan nilai bruto, DPP, omzet, atau nilai dokumen sesuai jenis pajak yang dipilih." />
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-xs font-semibold text-slate-500">Rp</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberInput(transactionAmount)}
-                      onChange={(e) => handleNumberInput(e.target.value, setTransactionAmount)}
-                      placeholder="0"
-                      className="w-full rounded-xl border border-slate-800 bg-slate-950/50 py-3 pl-12 pr-4 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
-                    />
-                  </div>
-                </div>
-
-                {calculatorType === 'ppn' && (
+            <div className="space-y-6">
+              <div className={['pph23', 'pphUnifikasi', 'pph26', 'pphBadan'].includes(calculatorType) ? "grid gap-5 sm:grid-cols-2" : "space-y-5"}>
+                {calculatorType !== 'pphBadan' && (
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Skema PPN
-                      <Tooltip content="Mulai 2025 tarif PPN umum 12%. Untuk BKP/JKP non-mewah, DPP nilai lain 11/12 membuat beban efektif tetap 11%." />
+                      Dasar Pengenaan / Nilai Transaksi
+                      <Tooltip content="Masukkan nilai bruto, DPP, omzet, atau nilai dokumen sesuai jenis pajak yang dipilih." />
                     </label>
-                    <ModernSelect
-                      id="vatMode"
-                      value={vatMode}
-                      options={vatModeOptions}
-                      open={openSelect === 'vatMode'}
-                      onToggle={setOpenSelect}
-                      onChange={(value) => setVatMode(value as VatMode)}
-                    />
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumberInput(transactionAmount)}
+                        onChange={(e) => handleNumberInput(e.target.value, setTransactionAmount)}
+                        placeholder="0"
+                        className="w-full rounded-xl border border-slate-800 bg-slate-950/50 py-3 pl-12 pr-4 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                      />
+                    </div>
                   </div>
                 )}
 
+                {calculatorType === 'ppn' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Metode Perhitungan
+                      </label>
+                      <ModernSelect
+                        id="includeVat"
+                        value={includeVat ? 'true' : 'false'}
+                        options={[{value: 'false', label: 'Belum Termasuk PPN'}, {value: 'true', label: 'Sudah Termasuk PPN'}]}
+                        open={openSelect === 'includeVat'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setIncludeVat(value === 'true')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Tarif PPN Berlaku
+                      </label>
+                      <ModernSelect
+                        id="vatMode"
+                        value={vatMode}
+                        options={[{value: '11_percent', label: 'Tarif Umum 11%'}, {value: '12_percent', label: 'Tarif 12% (Berlaku 2025)'}]}
+                        open={openSelect === 'vatMode'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setVatMode(value as VatMode)}
+                      />
+                    </div>
+                  </>
+                )}
+
                 {calculatorType === 'ppnbm' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Tarif PPnBM
-                      <Tooltip content="PPnBM dikenakan atas BKP yang tergolong mewah. Pilih lapisan tarif umum sesuai kelompok barang: 10%, 20%, 40%, 50%, atau 75%." />
-                    </label>
-                    <ModernSelect
-                      id="ppnbmRateBand"
-                      value={ppnbmRateBand}
-                      options={ppnbmRateOptions}
-                      open={openSelect === 'ppnbmRateBand'}
-                      onToggle={setOpenSelect}
-                      onChange={(value) => setPpnbmRateBand(value as PpnBmRateBand)}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Metode Perhitungan
+                      </label>
+                      <ModernSelect
+                        id="includePpnbm"
+                        value={includePpnbm ? 'true' : 'false'}
+                        options={[{value: 'false', label: 'Belum Termasuk PPnBM'}, {value: 'true', label: 'Sudah Termasuk PPnBM'}]}
+                        open={openSelect === 'includePpnbm'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setIncludePpnbm(value === 'true')}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Tarif PPnBM
+                        <Tooltip content="PPnBM dikenakan atas BKP yang tergolong mewah. Pilih lapisan tarif umum sesuai kelompok barang: 10%, 20%, 40%, 50%, atau 75%." />
+                      </label>
+                      <ModernSelect
+                        id="ppnbmRateBand"
+                        value={ppnbmRateBand}
+                        options={ppnbmRateOptions}
+                        open={openSelect === 'ppnbmRateBand'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setPpnbmRateBand(value as PpnBmRateBand)}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {calculatorType === 'pph23' && (
                   <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Skema Perhitungan
+                      </label>
+                      <SchemeRadioPicker
+                        value={isPph23GrossUp}
+                        onChange={setIsPph23GrossUp}
+                        options={[
+                          { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
+                          { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi (Gross-Up)' }
+                        ]}
+                      />
+                    </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
                         Objek PPh 23
@@ -616,20 +891,37 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         onChange={(value) => setPph23Object(value as Pph23Object)}
                       />
                     </div>
-                    <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/35 px-4 py-3 text-sm font-semibold text-slate-300">
-                      Penerima tanpa NPWP
-                      <input
-                        type="checkbox"
-                        checked={withoutNpwp}
-                        onChange={(e) => setWithoutNpwp(e.target.checked)}
-                        className="h-4 w-4 accent-blue-500"
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Kepemilikan NPWP
+                      </label>
+                      <ModernSelect
+                        id="withoutNpwp"
+                        value={withoutNpwp ? 'true' : 'false'}
+                        options={[{value: 'false', label: 'Ya, Memiliki NPWP'}, {value: 'true', label: 'Tidak Memiliki NPWP (+100%)'}]}
+                        open={openSelect === 'withoutNpwp'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setWithoutNpwp(value === 'true')}
                       />
-                    </label>
+                    </div>
                   </>
                 )}
 
                 {calculatorType === 'pphUnifikasi' && (
                   <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Skema Perhitungan
+                      </label>
+                      <SchemeRadioPicker
+                        value={isPphUnifikasiGrossUp}
+                        onChange={setIsPphUnifikasiGrossUp}
+                        options={[
+                          { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
+                          { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi (Gross-Up)' }
+                        ]}
+                      />
+                    </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
                         Objek PPh Unifikasi
@@ -644,37 +936,69 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         onChange={(value) => setPphUnificationObject(value as PphUnificationObject)}
                       />
                     </div>
-                    <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/35 px-4 py-3 text-sm font-semibold text-slate-300">
-                      Penerima tanpa NPWP
-                      <input
-                        type="checkbox"
-                        checked={withoutNpwp}
-                        onChange={(e) => setWithoutNpwp(e.target.checked)}
-                        className="h-4 w-4 accent-blue-500"
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Kepemilikan NPWP
+                      </label>
+                      <ModernSelect
+                        id="withoutNpwp"
+                        value={withoutNpwp ? 'true' : 'false'}
+                        options={[{value: 'false', label: 'Ya, Memiliki NPWP'}, {value: 'true', label: 'Tidak Memiliki NPWP (+100%)'}]}
+                        open={openSelect === 'withoutNpwp'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setWithoutNpwp(value === 'true')}
                       />
-                    </label>
+                    </div>
                   </>
                 )}
 
                 {calculatorType === 'pphFinal' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Objek PPh Final
-                      <Tooltip content="Simulasi mencakup UMKM 0,5%, sewa tanah/bangunan 10%, dan pengalihan tanah/bangunan 2,5%." />
-                    </label>
-                    <ModernSelect
-                      id="finalTaxObject"
-                      value={finalTaxObject}
-                      options={finalTaxOptions}
-                      open={openSelect === 'finalTaxObject'}
-                      onToggle={setOpenSelect}
-                      onChange={(value) => setFinalTaxObject(value as FinalTaxObject)}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Skema Perhitungan
+                      </label>
+                      <SchemeRadioPicker
+                        value={isPphFinalGrossUp}
+                        onChange={setIsPphFinalGrossUp}
+                        options={[
+                          { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
+                          { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi (Gross-Up)' }
+                        ]}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Objek PPh Final
+                        <Tooltip content="Simulasi mencakup UMKM 0,5%, sewa tanah/bangunan 10%, dan pengalihan tanah/bangunan 2,5%." />
+                      </label>
+                      <ModernSelect
+                        id="finalTaxObject"
+                        value={finalTaxObject}
+                        options={finalTaxOptions}
+                        open={openSelect === 'finalTaxObject'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setFinalTaxObject(value as FinalTaxObject)}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {calculatorType === 'pph26' && (
                   <>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Skema Perhitungan
+                      </label>
+                      <SchemeRadioPicker
+                        value={isPph26GrossUp}
+                        onChange={setIsPph26GrossUp}
+                        options={[
+                          { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
+                          { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi (Gross-Up)' }
+                        ]}
+                      />
+                    </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
                         Objek PPh 26
@@ -691,18 +1015,21 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                        Tarif P3B / Treaty
+                        Tarif P3B / Treaty (%)
                         <Tooltip content="Isi 20 jika tidak menggunakan tax treaty. Jika lawan transaksi punya SKD valid, masukkan tarif P3B yang berlaku." />
                       </label>
-                      <input
-                        type="number"
-                        value={treatyRatePercent}
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        onChange={(e) => handleDecimalInput(e.target.value, setTreatyRatePercent)}
-                        className="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
-                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={treatyRatePercent}
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          onChange={(e) => handleDecimalInput(e.target.value, setTreatyRatePercent)}
+                          className="w-full rounded-xl border border-slate-800 bg-slate-950/50 py-3 pl-4 pr-10 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-semibold text-slate-500">%</span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -757,16 +1084,19 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         />
                       </div>
                     </div>
-                    <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/35 px-4 py-3 text-sm font-semibold text-slate-300">
-                      Gunakan fasilitas Pasal 31E
-                      <input
-                        type="checkbox"
-                        checked={useCorporateFacility}
-                        onChange={(e) => setUseCorporateFacility(e.target.checked)}
-                        disabled={corporateTaxMode !== 'general'}
-                        className="h-4 w-4 accent-blue-500"
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Gunakan Fasilitas Pasal 31E
+                      </label>
+                      <ModernSelect
+                        id="useCorporateFacility"
+                        value={useCorporateFacility ? 'true' : 'false'}
+                        options={[{value: 'false', label: 'Tidak Menggunakan'}, {value: 'true', label: 'Ya, Gunakan Fasilitas'}]}
+                        open={openSelect === 'useCorporateFacility'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setUseCorporateFacility(value === 'true')}
                       />
-                    </label>
+                    </div>
                   </>
                 )}
 
@@ -850,15 +1180,18 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         Tarif Daerah (%)
                         <Tooltip content="Sesuaikan dengan Perda lokasi objek pajak. Contoh: PBJT restoran umumnya sampai 10%, reklame sampai 25%, air tanah sampai 20%." />
                       </label>
-                      <input
-                        type="number"
-                        value={localTaxRatePercent}
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        onChange={(e) => handleDecimalInput(e.target.value, setLocalTaxRatePercent)}
-                        className="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
-                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={localTaxRatePercent}
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          onChange={(e) => handleDecimalInput(e.target.value, setLocalTaxRatePercent)}
+                          className="w-full rounded-xl border border-slate-800 bg-slate-950/50 py-3 pl-4 pr-10 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-semibold text-slate-500">%</span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -884,123 +1217,154 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         Jumlah Bulan
                         <Tooltip content="Untuk sanksi bunga, jumlah bulan dibulatkan ke atas dan dibatasi maksimal 24 bulan. Untuk denda tetap, isian ini diabaikan." />
                       </label>
-                      <input
-                        type="number"
-                        value={penaltyMonths}
-                        onChange={(e) => handleNumberInput(e.target.value, setPenaltyMonths)}
-                        className="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
-                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={penaltyMonths}
+                          onChange={(e) => handleNumberInput(e.target.value, setPenaltyMonths)}
+                          className="w-full rounded-xl border border-slate-800 bg-slate-950/50 py-3 pl-4 pr-14 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-semibold text-slate-500">Bulan</span>
+                      </div>
                     </div>
                   </>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Estimasi Pajak Terutang</span>
-                <p className="mt-2 font-mono text-3xl font-black text-white">
-                  {calculatorType === 'ppn' && formatRupiah(vatResult.tax)}
-                  {calculatorType === 'ppnbm' && formatRupiah(ppnbmResult.tax)}
-                  {calculatorType === 'pph23' && formatRupiah(pph23Result.tax)}
-                  {calculatorType === 'pphUnifikasi' && formatRupiah(pphUnificationResult.tax)}
-                  {calculatorType === 'pphFinal' && formatRupiah(finalTaxResult.tax)}
-                  {calculatorType === 'pph26' && formatRupiah(pph26Result.tax)}
-                  {calculatorType === 'pphBadan' && formatRupiah(corporateTaxResult.tax)}
-                  {calculatorType === 'bphtb' && formatRupiah(bphtbResult.tax)}
-                  {calculatorType === 'pbbP2' && formatRupiah(pbbP2Result.tax)}
-                  {calculatorType === 'pajakDaerah' && formatRupiah(localTaxResult.tax)}
-                  {calculatorType === 'sanksiPajak' && formatRupiah(taxPenaltyResult.penalty)}
-                  {calculatorType === 'beaMeterai' && formatRupiah(stampDuty)}
-                </p>
-
-                <div className="mt-5 space-y-2.5 text-xs font-medium">
+              <div className="flex flex-col">
+                <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
                   {calculatorType === 'ppn' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">DPP:</span><span className="font-mono text-slate-200">{formatRupiah(vatResult.dpp)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(vatResult.rate * 100).toFixed(0)}%</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif efektif:</span><span className="font-mono text-slate-200">{(vatResult.effectiveRate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Dasar Pengenaan Pajak (DPP):</span>
+                        <span className="font-semibold text-slate-300 font-mono">Rp {vatResult.dpp.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Tarif Pajak:</span>
+                        <span className="font-semibold text-indigo-400 font-mono">{vatResult.rate * 100}%</span>
+                      </div>
                     </>
                   )}
                   {calculatorType === 'ppnbm' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">DPP PPnBM:</span><span className="font-mono text-slate-200">{formatRupiah(ppnbmResult.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(ppnbmResult.rate * 100).toFixed(0)}%</span></div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Dasar Pengenaan Pajak (DPP):</span>
+                        <span className="font-semibold text-slate-300 font-mono">Rp {ppnbmResult.base.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Tarif Pajak:</span>
+                        <span className="font-semibold text-indigo-400 font-mono">{ppnbmResult.rate * 100}%</span>
+                      </div>
                     </>
                   )}
                   {calculatorType === 'pph23' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Dasar pemotongan:</span><span className="font-mono text-slate-200">{formatRupiah(pph23Result.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(pph23Result.rate * 100).toFixed(0)}%</span></div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Dasar Pengenaan Pajak (DPP):</span>
+                        <span className="font-semibold text-slate-300 font-mono">Rp {pph23Result.base.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Tarif Pajak:</span>
+                        <span className="font-semibold text-indigo-400 font-mono">{pph23Result.rate * 100}%</span>
+                      </div>
+                      {withoutNpwp && (
+                        <div className="flex justify-between">
+                          <span className="text-rose-400">Denda Tanpa NPWP:</span>
+                          <span className="font-semibold text-rose-400 font-mono">+100%</span>
+                        </div>
+                      )}
                     </>
                   )}
                   {calculatorType === 'pphUnifikasi' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Dasar potong/pungut:</span><span className="font-mono text-slate-200">{formatRupiah(pphUnificationResult.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(pphUnificationResult.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dasar potong/pungut:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(pphUnificationResult.base)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif:</span><span className="font-semibold text-indigo-400 font-mono">{(pphUnificationResult.rate * 100).toFixed(2)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'pphFinal' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Bagian kena pajak:</span><span className="font-mono text-slate-200">{formatRupiah(finalTaxResult.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(finalTaxResult.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Bagian kena pajak:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(finalTaxResult.base)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif:</span><span className="font-semibold text-indigo-400 font-mono">{(finalTaxResult.rate * 100).toFixed(2)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'pph26' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Basis pajak:</span><span className="font-mono text-slate-200">{formatRupiah(pph26Result.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif efektif:</span><span className="font-mono text-slate-200">{(pph26Result.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Basis pajak:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(pph26Result.base)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif efektif:</span><span className="font-semibold text-indigo-400 font-mono">{(pph26Result.rate * 100).toFixed(2)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'pphBadan' && (
                     corporateTaxMode === 'umkm_final' ? (
                       <>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">Omzet kena final:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.grossTurnover)}</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif final:</span><span className="font-mono text-slate-200">{(corporateTaxResult.rate * 100).toFixed(2)}%</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Omzet kena final:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(corporateTaxResult.grossTurnover)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Tarif final:</span><span className="font-semibold text-indigo-400 font-mono">{(corporateTaxResult.rate * 100).toFixed(2)}%</span></div>
                       </>
                     ) : (
                       <>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">PKP fasilitas:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.facilityIncome)}</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">PKP tarif normal:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.normalIncome)}</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif umum:</span><span className="font-mono text-slate-200">{(corporateTaxResult.rate * 100).toFixed(0)}%</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif efektif:</span><span className="font-mono text-slate-200">{(corporateTaxResult.effectiveRate * 100).toFixed(2)}%</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">PKP fasilitas:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(corporateTaxResult.facilityIncome)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">PKP tarif normal:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(corporateTaxResult.normalIncome)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Tarif umum:</span><span className="font-semibold text-indigo-400 font-mono">{(corporateTaxResult.rate * 100).toFixed(0)}%</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Tarif efektif:</span><span className="font-semibold text-indigo-400 font-mono">{(corporateTaxResult.effectiveRate * 100).toFixed(2)}%</span></div>
                       </>
                     )
                   )}
                   {calculatorType === 'bphtb' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NPOP:</span><span className="font-mono text-slate-200">{formatRupiah(bphtbResult.npop)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NPOPTKP:</span><span className="font-mono text-slate-200">{formatRupiah(bphtbResult.npoptkp)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NPOP kena pajak:</span><span className="font-mono text-slate-200">{formatRupiah(bphtbResult.taxableBase)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(bphtbResult.rate * 100).toFixed(0)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NPOP:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(bphtbResult.npop)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NPOPTKP:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(bphtbResult.npoptkp)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NPOP kena pajak:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(bphtbResult.taxableBase)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif:</span><span className="font-semibold text-indigo-400 font-mono">{(bphtbResult.rate * 100).toFixed(0)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'pbbP2' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NJOP:</span><span className="font-mono text-slate-200">{formatRupiah(pbbP2Result.njop)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NJOPTKP:</span><span className="font-mono text-slate-200">{formatRupiah(pbbP2Result.njoptkp)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">NJOP kena pajak:</span><span className="font-mono text-slate-200">{formatRupiah(pbbP2Result.taxableBase)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(pbbP2Result.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NJOP:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(pbbP2Result.njop)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NJOPTKP:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(pbbP2Result.njoptkp)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">NJOP kena pajak:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(pbbP2Result.taxableBase)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif:</span><span className="font-semibold text-indigo-400 font-mono">{(pbbP2Result.rate * 100).toFixed(3)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'pajakDaerah' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Dasar pajak:</span><span className="font-mono text-slate-200">{formatRupiah(localTaxResult.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif:</span><span className="font-mono text-slate-200">{(localTaxResult.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dasar pengenaan:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(localTaxResult.base)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Tarif pajak daerah:</span><span className="font-semibold text-indigo-400 font-mono">{(localTaxResult.rate * 100).toFixed(2)}%</span></div>
                     </>
                   )}
                   {calculatorType === 'sanksiPajak' && (
                     <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Pokok kurang bayar:</span><span className="font-mono text-slate-200">{formatRupiah(taxPenaltyResult.base)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Denda tetap:</span><span className="font-mono text-slate-200">{formatRupiah(taxPenaltyResult.fixedFine)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Bulan bunga:</span><span className="font-mono text-slate-200">{taxPenaltyResult.months}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif bunga:</span><span className="font-mono text-slate-200">{(taxPenaltyResult.rate * 100).toFixed(2)}%</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dasar pengenaan denda:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(taxPenaltyResult.base)}</span></div>
+                      {taxPenaltyResult.months > 0 && (
+                        <div className="flex justify-between"><span className="text-slate-500">Lama keterlambatan:</span><span className="font-semibold text-indigo-400 font-mono">{taxPenaltyResult.months} bulan</span></div>
+                      )}
+                      {taxPenaltyResult.rate > 0 && (
+                        <div className="flex justify-between"><span className="text-slate-500">Tarif bunga sanksi:</span><span className="font-semibold text-indigo-400 font-mono">{(taxPenaltyResult.rate * 100).toFixed(2)}%/bulan</span></div>
+                      )}
+                      {taxPenaltyResult.fixedFine > 0 && (
+                        <div className="flex justify-between"><span className="text-slate-500">Denda tetap:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(taxPenaltyResult.fixedFine)}</span></div>
+                      )}
                     </>
                   )}
                   {calculatorType === 'beaMeterai' && (
-                    <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Ambang dokumen:</span><span className="font-mono text-slate-200">Rp 5.000.000</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif meterai:</span><span className="font-mono text-slate-200">Rp 10.000</span></div>
-                    </>
+                    <div className="flex justify-between"><span className="text-slate-500">Nilai dokumen:</span><span className="font-semibold text-slate-300 font-mono">{formatRupiah(transactionAmount)}</span></div>
                   )}
+
+                  <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
+                    <span className="text-slate-400">Total {selectedCalculatorOption?.title || 'Terutang'}:</span>
+                    <span className="text-white font-mono">
+                      {calculatorType === 'ppn' && formatRupiah(vatResult.tax)}
+                      {calculatorType === 'ppnbm' && formatRupiah(ppnbmResult.tax)}
+                      {calculatorType === 'pph23' && formatRupiah(pph23Result.tax)}
+                      {calculatorType === 'pphUnifikasi' && formatRupiah(pphUnificationResult.tax)}
+                      {calculatorType === 'pphFinal' && formatRupiah(finalTaxResult.tax)}
+                      {calculatorType === 'pph26' && formatRupiah(pph26Result.tax)}
+                      {calculatorType === 'pphBadan' && formatRupiah(corporateTaxResult.tax)}
+                      {calculatorType === 'bphtb' && formatRupiah(bphtbResult.tax)}
+                      {calculatorType === 'pbbP2' && formatRupiah(pbbP2Result.tax)}
+                      {calculatorType === 'pajakDaerah' && formatRupiah(localTaxResult.tax)}
+                      {calculatorType === 'sanksiPajak' && formatRupiah(taxPenaltyResult.penalty)}
+                      {calculatorType === 'beaMeterai' && formatRupiah(stampDuty)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1015,411 +1379,574 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator PPh 21</h2>
-              <p className="text-xs text-slate-400 mt-1">Isi penghasilan, pengurang, lalu lihat estimasi PPh 21.</p>
+              <p className="text-xs text-slate-400 mt-1">Isi penghasilan, pengurang, lalu lihat perhitungan PPh 21.</p>
             </div>
-            <div className="hidden sm:block">
-              {stepTracker}
-            </div>
+            {jenisPemotongan === 'tahunan' && (
+              <div className="flex items-center gap-2 mt-2 md:mt-0">
+                <div className={`h-2 w-2 rounded-full ${step >= 1 ? 'bg-blue-500' : 'bg-slate-700'}`}></div>
+                <div className={`h-2 w-2 rounded-full ${step >= 2 ? 'bg-blue-500' : 'bg-slate-700'}`}></div>
+                <div className={`h-2 w-2 rounded-full ${step >= 3 ? 'bg-blue-500' : 'bg-slate-700'}`}></div>
+                <span className="ml-1 text-[10px] font-bold text-slate-400">Tahap {step}/3</span>
+              </div>
+            )}
           </div>
 
-          {/* STEP 1: PENGHASILAN BRUTO */}
-          {step === 1 && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                    Tahun Pajak
-                    <Tooltip content="Tahun buku kalender perpajakan yang dilaporkan (contoh: 2026)." />
-                  </label>
-                  <YearCombobox
-                    id="taxYear"
-                    value={taxYear}
-                    options={taxYearOptions}
-                    open={openSelect === 'taxYear'}
-                    onToggle={setOpenSelect}
-                    onChange={setTaxYear}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                    Masa Pajak
-                    <Tooltip content="Periode pajak yang dihitung. Masa Januari-November memakai TER bulanan, sedangkan Desember dihitung sebagai rekonsiliasi setahun." />
-                  </label>
-                  <ModernSelect
-                    id="taxPeriod"
-                    value={taxPeriod}
-                    options={taxPeriodOptions}
-                    open={openSelect === 'taxPeriod'}
-                    onToggle={setOpenSelect}
-                    onChange={(value) => setTaxPeriod(value as TaxPeriod)}
-                  />
-                </div>
+          {/* Jenis Pemotongan */}
+          <div className="space-y-1.5 mb-6">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+              Jenis Pemotongan
+              <Tooltip content="Pilih jenis pemotongan PPh 21 yang sesuai dengan kebutuhan Anda." />
+            </label>
+            <ModernSelect
+              id="jenisPemotongan"
+              value={jenisPemotongan}
+              options={jenisPemotonganOptions}
+              open={openSelect === 'jenisPemotongan'}
+              onToggle={setOpenSelect}
+              onChange={(value) => {
+                setJenisPemotongan(value as JenisPemotongan);
+                setStep(1); // Reset step if changing type
+              }}
+            />
+          </div>
+
+          {/* TAHUNAN VIEW */}
+          {jenisPemotongan === 'tahunan' && (
+            <div className="space-y-6">
+              <div className="relative z-10">
+                <OcrUploader onScanComplete={(data: { nominal: number, taxType: string }) => {
+                  setTransactionAmount(data.nominal);
+                  setTahunanGaji(data.nominal);
+                }} />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                  {isAnnual ? 'Gaji Pokok Setahun' : 'Gaji Pokok Bulanan'}
-                  <Tooltip content={isAnnual ? "Total penghasilan rutin kotor (gross) setahun sebelum dikurangi potongan apapun seperti asuransi dan iuran." : "Total penghasilan rutin kotor (gross) dalam sebulan sebelum dikurangi potongan apapun seperti asuransi dan iuran."} />
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatNumberInput(gaji)}
-                    onChange={(e) => handleNumberInput(e.target.value, setGaji)}
-                    placeholder="0"
-                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                  />
+              {/* PENGHASILAN BRUTO - STEP 1 */}
+              <div className={`transition-all duration-300 ${step === 1 ? 'block' : 'hidden'}`}>
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px] flex justify-between items-center">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">1. PENGHASILAN BRUTO</h3>
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                  {isAnnual ? 'Tunjangan Setahun' : 'Tunjangan Bulanan'}
-                  <Tooltip content={isAnnual ? "Total seluruh tunjangan teratur/tidak teratur (kesehatan, makan, transportasi, keluarga) yang diterima dalam setahun." : "Total seluruh tunjangan teratur/tidak teratur (kesehatan, makan, transportasi, keluarga) yang diterima dalam sebulan."} />
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatNumberInput(tunjangan)}
-                    onChange={(e) => handleNumberInput(e.target.value, setTunjangan)}
-                    placeholder="0"
-                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                  {isAnnual ? 'Bonus / THR / Lainnya' : 'Bonus / Lainnya Bulanan'}
-                  <Tooltip content={isAnnual ? "Pendapatan bruto sekali setahun yang tidak rutin, seperti Tunjangan Hari Raya (THR), bonus kinerja, atau jasa produksi." : "Pendapatan bruto bulanan yang tidak rutin (jika ada) yang diterima dalam bulan bersangkutan."} />
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatNumberInput(bonus)}
-                    onChange={(e) => handleNumberInput(e.target.value, setBonus)}
-                    placeholder="0"
-                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-800/50 flex justify-between items-center text-xs">
-                <div>
-                  <p className="text-slate-500">{isAnnual ? 'Total Bruto Setahun:' : 'Total Bruto Bulanan:'}</p>
-                  <p className="text-sm font-bold text-white mt-0.5 font-mono">Rp {grossIncome.toLocaleString('id-ID')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider"
-                >
-                  Lanjut Step 2
-                </button>
-              </div>
-              <div className="flex justify-center sm:hidden">
-                {stepTracker}
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: PENGURANG & PTKP */}
-          {step === 2 && (
-            <div className="space-y-5">
-              {!isAnnual && (
-                <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 rounded-xl leading-relaxed">
-                  Perhitungan PPh 21 Bulanan menggunakan skema <strong>Tarif Efektif Rata-rata (TER) PP 58/2023</strong>. Tarif ini langsung dikalikan dengan Penghasilan Bruto Bulanan tanpa dikurangi Biaya Jabatan atau Iuran Pensiun.
-                </div>
-              )}
-
-              {isAnnual && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Iuran Pensiun / JHT Setahun
-                      <Tooltip content="Iuran pensiun/THT/JHT yang dibayar pegawai dan dapat menjadi pengurang penghasilan bruto dalam penghitungan PPh 21 tahunan." />
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                <div className="p-4 space-y-4">
+                  {[
+                    { label: 'GAJI/PENSIUN ATAU THT/JHT', state: tahunanGaji, setter: setTahunanGaji, num: 1 },
+                    { label: 'TUNJANGAN PPh', state: tahunanTunjanganPph, setter: setTahunanTunjanganPph, num: 2 },
+                    { label: 'TUNJANGAN LAINNYA, UANG LEMBUR DAN SEBAGAINYA', state: tahunanTunjanganLainnya, setter: setTahunanTunjanganLainnya, num: 3 },
+                    { label: 'HONORARIUM DAN IMBALAN LAIN SEJENISNYA', state: tahunanHonorarium, setter: setTahunanHonorarium, num: 4 },
+                    { label: 'PREMI ASURANSI YANG DIBAYARKAN PEMBERI KERJA', state: tahunanPremiAsuransi, setter: setTahunanPremiAsuransi, num: 5 },
+                    { label: 'PENERIMAAN DALAM BENTUK NATURA DAN KENIKMATAN LAINNYA', state: tahunanNatura, setter: setTahunanNatura, num: 6 },
+                    { label: 'TANTIEM, BONUS, GRATIFIKASI, JASA PRODUKSI DAN THR', state: tahunanBonus, setter: setTahunanBonus, num: 7 },
+                  ].map((field) => (
+                    <div key={field.num} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                        <span className="w-5 flex-shrink-0">{field.num}</span>
+                        <span>{field.label}</span>
+                      </div>
+                      <div className="relative w-full sm:w-1/3">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberInput(field.state)}
+                          onChange={(e) => handleNumberInput(e.target.value, field.setter)}
+                          placeholder="0"
+                          className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/50">
+                    <div className="flex gap-3 text-xs font-bold text-white w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">8</span>
+                      <span>JUMLAH PENGHASILAN BRUTO (1 S.D. 7)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                       <input
                         type="text"
-                        inputMode="numeric"
-                        value={formatNumberInput(iuranPensiun)}
-                        onChange={(e) => handleNumberInput(e.target.value, setIuranPensiun)}
-                        placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        readOnly
+                        value={formatNumberInput(grossIncome)}
+                        className="w-full bg-blue-900/10 border border-blue-500/20 text-blue-100 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-90 cursor-not-allowed"
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Zakat / Sumbangan Wajib
-                      <Tooltip content="Zakat atau sumbangan keagamaan wajib yang dibayarkan melalui lembaga resmi dan memenuhi syarat sebagai pengurang." />
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                </div>
+                <div className="p-4 border-t border-slate-800/80 flex justify-end">
+                  <button type="button" onClick={() => setStep(2)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 hover:shadow-blue-900/40">
+                    Lanjut Pengurangan
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </button>
+                </div>
+              </div>
+              </div>
+
+              {/* PENGURANGAN - STEP 2 */}
+              <div className={`transition-all duration-300 ${step === 2 ? 'block' : 'hidden'}`}>
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">2. PENGURANGAN</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">9</span>
+                      <span>BIAYA JABATAN/BIAYA PENSIUN</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                       <input
                         type="text"
-                        inputMode="numeric"
-                        value={formatNumberInput(zakatSumbangan)}
-                        onChange={(e) => handleNumberInput(e.target.value, setZakatSumbangan)}
-                        placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.jobExpense)}
+                        className="w-full bg-slate-900/30 border border-slate-800 text-slate-400 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-80 cursor-not-allowed"
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Neto Sebelumnya
-                      <Tooltip content="Isi jika pegawai pindah kerja atau ada penghasilan neto dari masa/pemberi kerja sebelumnya yang harus digabung setahun." />
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                  {[
+                    { label: 'IURAN PENSIUN ATAU IURAN THT/JHT', state: iuranPensiun, setter: setIuranPensiun, num: 10 },
+                    { label: 'ZAKAT/SUMBANGAN KEAGAMAAN YANG BERSIFAT WAJIB YANG DIBAYARKAN MELALUI PEMBERI KERJA', state: zakatSumbangan, setter: setZakatSumbangan, num: 11 },
+                  ].map((field) => (
+                    <div key={field.num} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                        <span className="w-5 flex-shrink-0">{field.num}</span>
+                        <span>{field.label}</span>
+                      </div>
+                      <div className="relative w-full sm:w-1/3">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberInput(field.state)}
+                          onChange={(e) => handleNumberInput(e.target.value, field.setter)}
+                          placeholder="0"
+                          className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/50">
+                    <div className="flex gap-3 text-xs font-bold text-white w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">12</span>
+                      <span>JUMLAH PENGURANGAN (9 S.D. 11)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.totalDeduction)}
+                        className="w-full bg-blue-900/10 border border-blue-500/20 text-blue-100 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-90 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 border-t border-slate-800/80 flex justify-between items-center">
+                  <button type="button" onClick={() => setStep(1)} className="flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-slate-700">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Kembali
+                  </button>
+                  <button type="button" onClick={() => setStep(3)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 hover:shadow-blue-900/40">
+                    Lanjut Hitung PPh
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </button>
+                </div>
+              </div>
+              </div>
+
+              {/* PENGHITUNGAN PPh PASAL 21 - STEP 3 */}
+              <div className={`transition-all duration-300 ${step === 3 ? 'block' : 'hidden'}`}>
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">3. PENGHITUNGAN PPh PASAL 21</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">13</span>
+                      <span>JUMLAH PENGHASILAN NETO (8 - 12)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.currentNetIncome)}
+                        className="w-full bg-slate-900/30 border border-slate-800 text-slate-400 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">14</span>
+                      <span>PENGHASILAN NETO MASA PAJAK SEBELUMNYA</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                       <input
                         type="text"
                         inputMode="numeric"
                         value={formatNumberInput(previousNetIncome)}
                         onChange={(e) => handleNumberInput(e.target.value, setPreviousNetIncome)}
                         placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                      Kredit PPh 21 Dipotong
-                      <Tooltip content="Jumlah PPh 21 yang sudah dipotong pada masa sebelumnya atau oleh pemberi kerja lain, untuk menghitung kurang/lebih bayar akhir tahun." />
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">15</span>
+                      <span>JUMLAH PENGHASILAN NETO UNTUK PENGHITUNGAN PPh PASAL 21 (SETAHUN/DISETAHUNKAN)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.netIncomeForTax)}
+                        className="w-full bg-slate-900/30 border border-slate-800 text-slate-400 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">16</span>
+                      <span>PENGHASILAN TIDAK KENA PAJAK (PTKP)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <ModernSelect
+                        id="ptkpStatusTahunan"
+                        value={ptkpStatus}
+                        options={ptkpOptions}
+                        open={openSelect === 'ptkpStatusTahunan'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setPtkpStatus(value as PtkpStatus)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">17</span>
+                      <span>PENGHASILAN KENA PAJAK SETAHUN/DISETAHUNKAN (15 - 16)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.taxableIncome)}
+                        className="w-full bg-slate-900/30 border border-slate-800 text-slate-400 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">18</span>
+                      <span>PPh PASAL 21 ATAS PENGHASILAN KENA PAJAK SETAHUN/DISETAHUNKAN</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.annualTax)}
+                        className="w-full bg-slate-900/30 border border-slate-800 text-slate-400 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-3 text-xs font-semibold text-slate-300 w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">19</span>
+                      <span>PPh PASAL 21 YANG TELAH DIPOTONG MASA PAJAK SEBELUMNYA</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                       <input
                         type="text"
                         inputMode="numeric"
                         value={formatNumberInput(withheldTaxCredit)}
                         onChange={(e) => handleNumberInput(e.target.value, setWithheldTaxCredit)}
                         placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/50">
+                    <div className="flex gap-3 text-xs font-bold text-white w-full sm:w-2/3">
+                      <span className="w-5 flex-shrink-0">20</span>
+                      <span>PPh PASAL 21 TERUTANG (18 - 19)</span>
+                    </div>
+                    <div className="relative w-full sm:w-1/3">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatNumberInput(annualPph21Result.taxDue)}
+                        className="w-full bg-blue-900/10 border border-blue-500/20 text-blue-100 rounded-lg pl-9 pr-3 py-2 text-xs font-mono opacity-90 cursor-not-allowed"
                       />
                     </div>
                   </div>
                 </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                  Status PTKP (UU HPP)
-                  <Tooltip content="Batas Penghasilan Tidak Kena Pajak. Semakin banyak tanggungan anak (max 3), semakin besar pengurang PTKP Anda." />
-                </label>
-                <ModernSelect
-                  id="ptkpStatus"
-                  value={ptkpStatus}
-                  options={ptkpOptions}
-                  open={openSelect === 'ptkpStatus'}
-                  onToggle={setOpenSelect}
-                  onChange={(value) => setPtkpStatus(value as PtkpStatus)}
-                />
+                </div>
+                <div className="p-4 border-t border-slate-800/80 flex justify-start items-center">
+                  <button type="button" onClick={() => setStep(2)} className="flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-slate-700">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Kembali
+                  </button>
+                </div>
               </div>
-
-              {/* Box Preview Pengurang / Info TER */}
-              {isAnnual ? (
-                <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 flex items-center">
-                      Biaya Jabatan (Otomatis 5%):
-                      <Tooltip content="Fasilitas pengurang otomatis dari negara sebesar 5% dari pendapatan bruto setahun, dengan batas maksimal Rp 6.000.000." />
-                    </span>
-                    <span className="font-semibold text-slate-300 font-mono">Rp {biayaJabatan.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
-                    <span className="text-slate-400">Total Pengurang:</span>
-                    <span className="text-white font-mono">Rp {totalPengurang.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-800/50 pt-2">
-                    <span className="text-slate-500">Kredit PPh 21:</span>
-                    <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.withheldTaxCredit.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 flex items-center">
-                      Kategori TER Bulanan:
-                      <Tooltip content="Kategori TER ditentukan berdasarkan status PTKP Anda di awal tahun: Kategori A (TK/0, TK/1, K/0), Kategori B (TK/2, TK/3, K/1, K/2), Kategori C (K/3)." />
-                    </span>
-                    <span className="font-semibold text-blue-400">Kategori {terCategory}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 flex items-center">
-                      Tarif TER Efektif:
-                      <Tooltip content="Persentase tarif efektif bulanan berdasarkan kategori TER dan rentang penghasilan bruto bulanan Anda (PP 58/2023)." />
-                    </span>
-                    <span className="font-semibold text-indigo-400 font-mono">{(terRate * 100).toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
-                    <span className="text-slate-400">Estimasi PPh 21 Bulan Ini:</span>
-                    <span className="text-white font-mono">Rp {estimatedTax.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-slate-800/50 flex justify-between items-center">
+              
+              <div className="flex justify-end pt-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider"
+                  onClick={() => handleSave('draft')}
+                  className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Kembali
+                  Simpan sebagai Draf
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStep(3)}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all text-xs shadow-md uppercase tracking-wider"
+                  onClick={() => handleSave('submitted')}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2"
                 >
-                  Lanjut Step 3
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  Selesaikan Laporan
                 </button>
-              </div>
-              <div className="flex justify-center sm:hidden">
-                {stepTracker}
               </div>
             </div>
           )}
 
-          {/* STEP 3: RINGKASAN & SUBMIT */}
-          {step === 3 && (
-            <div className="space-y-5">
-              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-center relative overflow-hidden">
-                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-600/30 text-blue-400 border border-blue-500/30">
-                  {isAnnual ? 'Pasal 17 Progresif' : 'TER PPh 21'}
+          {/* BULANAN VIEW */}
+          {jenisPemotongan === 'bulanan' && (
+            <div className="space-y-6">
+              {/* Box Rincian Karyawan */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px]">
+                  <h3 className="text-xs font-bold tracking-wider text-white uppercase">Rincian karyawan</h3>
                 </div>
-                <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase">
-                  {isAnnual ? 'Estimasi PPh 21 Kurang Bayar' : 'Estimasi Pajak Terutang Bulanan'}
-                </span>
-                <p className="text-3xl font-black text-white mt-1 font-mono">
-                  <span className="text-lg text-blue-400 font-medium mr-1">Rp</span>
-                  {pph21DisplayTax.toLocaleString('id-ID')}
-                </p>
-                {isAnnual && annualPph21Result.overpaidTax > 0 && (
-                  <p className="mt-2 text-xs font-bold text-emerald-300">
-                    Lebih bayar {formatRupiah(annualPph21Result.overpaidTax)}
-                  </p>
-                )}
+                <div className="p-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPh bulan</label>
+                      <ModernSelect id="taxPeriod" value={taxPeriod} options={taxPeriodOptions} open={openSelect === 'taxPeriod'} onToggle={setOpenSelect} onChange={(value) => setTaxPeriod(value as TaxPeriod)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
+                      <ModernSelect id="employmentStatus" value={employmentStatus} options={employmentStatusOptions} open={openSelect === 'employmentStatus'} onToggle={setOpenSelect} onChange={(value) => setEmploymentStatus(value as EmploymentStatus)} />
+                    </div>
+                    {taxPeriod === '12' && (
+                      <div className="sm:col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4 flex gap-3 text-amber-200/90 text-xs sm:text-sm leading-relaxed items-start">
+                        <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path></svg>
+                        <p>Penerapan TER tidak berlaku untuk bulan Desember. Agar lebih akurat, Anda bisa hitung pph bulan Desember <button type="button" onClick={() => { setJenisPemotongan('tahunan'); setStep(1); }} className="text-amber-400 font-semibold hover:underline decoration-amber-400/50 underline-offset-2">disini</button></p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status PTKP</label>
+                      <ModernSelect id="ptkpStatus" value={ptkpStatus} options={ptkpOptions} open={openSelect === 'ptkpStatus'} onToggle={setOpenSelect} onChange={(value) => setPtkpStatus(value as PtkpStatus)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema perhitungan</label>
+                      <SchemeRadioPicker
+                        value={calculationScheme}
+                        onChange={setCalculationScheme}
+                        options={[
+                          { value: 'gross', label: 'Gross', tooltip: 'PPh 21 dipotong dari penghasilan bruto yang Anda masukkan.' },
+                          { value: 'gross_up', label: 'Gross Up', tooltip: 'PPh 21 ditanggung sebagai tunjangan pajak, lalu ikut menambah dasar penghasilan bruto.' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tunjangan PPh</label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                        <input type="text" inputMode="numeric" value={formatNumberInput(tunjangan)} onChange={(e) => handleNumberInput(e.target.value, setTunjangan)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan bruto</label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                        <input type="text" inputMode="numeric" value={formatNumberInput(gaji)} onChange={(e) => handleNumberInput(e.target.value, setGaji)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs font-medium">
+              {/* Box Info TER */}
+              <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">{isAnnual ? 'Penghasilan Bruto Setahun:' : 'Penghasilan Bruto Bulanan:'}</span>
-                  <span className="font-semibold text-slate-300 font-mono">Rp {grossIncome.toLocaleString('id-ID')}</span>
+                  <span className="text-slate-500">Kategori TER Bulanan:</span>
+                  <span className="font-semibold text-blue-400">Kategori {terCategory}</span>
                 </div>
-                {isAnnual ? (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tarif TER Efektif:</span>
+                  <span className="font-semibold text-indigo-400 font-mono">{(terRate * 100).toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
+                  <span className="text-slate-400">PPh 21 Bulan Ini:</span>
+                  <span className="text-white font-mono">Rp {estimatedTax.toLocaleString('id-ID')}</span>
+                </div>
+                {isGrossUp && (
                   <>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Total Pengurang:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {totalPengurang.toLocaleString('id-ID')}</span>
+                    <div className="flex justify-between border-t border-slate-800/50 pt-2">
+                      <span className="text-slate-500">Tunjangan Pajak Gross Up:</span>
+                      <span className="font-semibold text-blue-300 font-mono">Rp {pph21TaxAllowance.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Neto Sebelumnya:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.previousNetIncome.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Neto Setahun:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.netIncomeForTax.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                      <span className="text-slate-500">PTKP ({ptkpStatus}):</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {ptkpValue.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between pt-1.5 font-bold">
-                      <span className="text-slate-400 flex items-center">
-                        PKP (Kena Pajak):
-                        <Tooltip content="Penghasilan Kena Pajak. Hasil sisa pendapatan bersih setelah dikurangi PTKP yang digunakan sebagai basis pengenaan PPh." />
-                      </span>
-                      <span className="text-white font-mono">Rp {pkp.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between pt-1.5">
-                      <span className="text-slate-500">PPh 21 Setahun:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.annualTax.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Kredit Pajak:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.withheldTaxCredit.toLocaleString('id-ID')}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 flex items-center">
-                        Kategori TER Bulanan:
-                        <Tooltip content="Kategori TER berdasarkan status PTKP Anda di awal tahun." />
-                      </span>
-                      <span className="font-semibold text-blue-400">Kategori {terCategory}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 flex items-center">
-                        Tarif Efektif TER:
-                        <Tooltip content="Tarif persentase TER bulanan berdasarkan PP 58/2023." />
-                      </span>
-                      <span className="font-semibold text-indigo-400 font-mono">{(terRate * 100).toFixed(2)}%</span>
-                    </div>
-                    <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
-                      <span className="text-slate-400 flex items-center">
-                        Batas PTKP Acuan:
-                        <Tooltip content="Acuan batasan PTKP awal tahun untuk mengkategorikan TER (Kategori A, B, atau C)." />
-                      </span>
-                      <span className="text-white font-mono">Rp {ptkpValue.toLocaleString('id-ID')} ({ptkpStatus})</span>
+                      <span className="text-slate-500">Bruto Setelah Gross Up:</span>
+                      <span className="font-semibold text-slate-300 font-mono">Rp {pph21TaxableGrossIncome.toLocaleString('id-ID')}</span>
                     </div>
                   </>
                 )}
               </div>
-
+              
               {serverError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
                   {serverError.message}
                 </div>
               )}
 
-              <div className="space-y-2.5 pt-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all text-xs uppercase tracking-wider border border-slate-750"
-                    disabled={isPending}
-                  >
-                    Edit Data
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSave('draft')}
-                    className="w-full py-3.5 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 font-bold rounded-xl transition-all text-xs uppercase tracking-wider"
-                    disabled={isPending}
-                  >
-                    Simpan Draf
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSave('submitted')}
-                  className="relative w-full overflow-hidden rounded-xl bg-blue-600 py-3.5 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-50 outline-none group/btn text-xs tracking-wider uppercase"
-                  disabled={isPending}
-                >
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
-                  {isPending ? 'Mengirim Data...' : 'Submit Resmi Laporan'}
+              <div className="flex justify-end pt-2 gap-3">
+                <button type="button" onClick={() => { setGaji(0); setTunjangan(0); }} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
                 </button>
-                <div className="flex justify-center sm:hidden">
-                  {stepTracker}
+              </div>
+            </div>
+          )}
+
+          {/* FINAL VIEW */}
+          {jenisPemotongan === 'final' && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px]">
+                  <h3 className="text-xs font-bold tracking-wider text-white uppercase">Objek Pajak Final</h3>
                 </div>
+                <div className="p-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis Pemotongan Final</label>
+                    <ModernSelect id="finalTaxObjectPph21" value={finalTaxObjectPph21} options={pph21FinalOptions} open={openSelect === 'finalTaxObjectPph21'} onToggle={setOpenSelect} onChange={(value) => setFinalTaxObjectPph21(value as Pph21FinalObject)} />
+                  </div>
+                  {finalTaxObjectPph21 === 'honorarium_apbn' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Golongan PNS/TNI/Polri</label>
+                      <ModernSelect id="pnsGolongan" value={pnsGolongan} options={pnsGolonganOptions} open={openSelect === 'pnsGolongan'} onToggle={setOpenSelect} onChange={(value) => setPnsGolongan(value)} />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan Bruto</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input type="text" inputMode="numeric" value={formatNumberInput(finalGrossIncome)} onChange={(e) => handleNumberInput(e.target.value, setFinalGrossIncome)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tarif Pajak Final:</span>
+                  <span className="font-semibold text-indigo-400 font-mono">{calculatePph21Final(finalGrossIncome, finalTaxObjectPph21, pnsGolongan).ratePercent}%</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
+                  <span className="text-slate-400">Pajak Terutang (Final):</span>
+                  <span className="text-white font-mono">Rp {calculatePph21Final(finalGrossIncome, finalTaxObjectPph21, pnsGolongan).taxDue.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+              
+              {serverError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
+                  {serverError.message}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 gap-3">
+                <button type="button" onClick={() => setFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TIDAK FINAL VIEW */}
+          {jenisPemotongan === 'tidak_final' && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/35">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-800 rounded-t-[15px]">
+                  <h3 className="text-xs font-bold tracking-wider text-white uppercase">Rincian Penerima Penghasilan</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
+                      <ModernSelect id="tidakFinalCategory" value={tidakFinalCategory} options={pph21TidakFinalOptions} open={openSelect === 'tidakFinalCategory'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalCategory(value as Pph21TidakFinalCategory)} />
+                    </div>
+                    {tidakFinalCategory === '21-100-03' && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis</label>
+                        <ModernSelect id="tidakFinalJenis" value={tidakFinalJenis || 'non_bulanan'} options={pph21TidakFinalJenisOptions} open={openSelect === 'tidakFinalJenis'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalJenis(value as Pph21TidakFinalJenis)} />
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kepemilikan NPWP</label>
+                      <ModernSelect id="tidakFinalHasNpwp" value={tidakFinalHasNpwp ? 'true' : 'false'} options={[{value: 'true', label: 'Ya, Memiliki NPWP'}, {value: 'false', label: 'Tidak Memiliki NPWP'}]} open={openSelect === 'tidakFinalHasNpwp'} onToggle={setOpenSelect} onChange={(value) => setTidakFinalHasNpwp(value === 'true')} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan Bruto</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input type="text" inputMode="numeric" value={formatNumberInput(tidakFinalGrossIncome)} onChange={(e) => handleNumberInput(e.target.value, setTidakFinalGrossIncome)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl text-xs space-y-2 font-medium">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Dasar Pengenaan Pajak (DPP):</span>
+                  <span className="font-semibold text-slate-300 font-mono">Rp {calculatePph21TidakFinal(tidakFinalGrossIncome, tidakFinalCategory, tidakFinalHasNpwp, tidakFinalJenis).dpp.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tarif Pajak:</span>
+                  <span className="font-semibold text-indigo-400 font-mono">{calculatePph21TidakFinal(tidakFinalGrossIncome, tidakFinalCategory, tidakFinalHasNpwp, tidakFinalJenis).ratePercent}%</span>
+                </div>
+                {!tidakFinalHasNpwp && (
+                  <div className="flex justify-between">
+                    <span className="text-rose-400">Denda Tanpa NPWP:</span>
+                    <span className="font-semibold text-rose-400 font-mono">+20%</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
+                  <span className="text-slate-400">Total PPh 21 Terutang:</span>
+                  <span className="text-white font-mono">Rp {calculatePph21TidakFinal(tidakFinalGrossIncome, tidakFinalCategory, tidakFinalHasNpwp, tidakFinalJenis).taxDue.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+              
+              {serverError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
+                  {serverError.message}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 gap-3">
+                <button type="button" onClick={() => setTidakFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all uppercase tracking-wider">Reset</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-200 font-bold text-xs hover:bg-slate-700 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
+                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
+                </button>
               </div>
             </div>
           )}
         </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

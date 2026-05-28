@@ -2,6 +2,7 @@
 
 import { useFetchIncomeSources, useDeleteIncomeSource } from '@/hooks/useIncomeSources';
 import { IncomeSource } from '@/types/taxpayer';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface IncomeSourceTableProps {
   taxYear: number;
@@ -38,14 +39,15 @@ const TYPE_LABELS: Record<string, { label: string; badge: string }> = {
 export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTableProps) {
   const { data: sources = [], isLoading, isError, error } = useFetchIncomeSources(taxYear);
   const deleteMutation = useDeleteIncomeSource();
+  const { showAlert, showConfirm } = useAlert();
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus sumber penghasilan "${name}"?`)) {
+    if (await showConfirm('Hapus Sumber', `Apakah Anda yakin ingin menghapus sumber penghasilan "${name}"?`, 'Ya, Hapus', 'Batal')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Kesalahan tidak dikenal.';
-        alert(`Gagal menghapus data: ${message}`);
+        await showAlert('Gagal', `Gagal menghapus data: ${message}`, 'error');
       }
     }
   };

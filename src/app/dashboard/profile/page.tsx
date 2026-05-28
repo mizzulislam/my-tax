@@ -1270,7 +1270,7 @@ export default function ProfileSettingsPage() {
 
                 <section className="space-y-5 border-t border-slate-800/60 pt-6">
                   <div className="space-y-2">
-                    <label className={labelClass}>Tahu Tax Feyments dari mana?</label>
+                    <label className={labelClass}>Tahu My Tax dari mana?</label>
                     <ModernSelect
                       id="discoverySource"
                       value={discoverySource}

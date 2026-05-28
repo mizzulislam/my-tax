@@ -84,7 +84,7 @@ export default function AdvancedAnalyticsSection({ reportsData }: AdvancedAnalyt
     <section className="space-y-5 md:space-y-8">
       <div>
         <h2 className="text-xl md:text-3xl font-black tracking-tight text-white mb-1.5 md:mb-2">
-          Analitik <span className="text-blue-500">Lanjutan</span>
+          Distribusi & <span className="text-blue-500">Kinerja Pajak</span>
         </h2>
         <p className="text-slate-400 max-w-2xl text-xs md:text-base leading-relaxed">
           Pantau rasio pajak efektif, tren bruto bulanan, proporsi alokasi pengeluaran kotor, serta perbandingan year-over-year secara dinamis.

@@ -18,6 +18,7 @@ const {
   calculateTaxPenalty,
   calculateUmkmTax,
   calculateVat,
+  getMonthlyTerRate,
   getTerCategory,
 } = require('../.test-build/lib/taxEngine.js');
 
@@ -35,6 +36,8 @@ test('TER category and monthly tax use PTKP status brackets', () => {
   assert.equal(getTerCategory('K/3'), 'C');
   assert.equal(calculateMonthlyTerTax(5_000_000, 'TK/0'), 0);
   assert.equal(calculateMonthlyTerTax(6_000_000, 'TK/0'), 45_000);
+  assert.equal(getMonthlyTerRate(8_000_000, 'K/1'), 0.01);
+  assert.equal(calculateMonthlyTerTax(8_000_000, 'K/1'), 80_000);
 });
 
 test('calculateAnnualPph21 reconciles deductions, previous net income, and credits', () => {

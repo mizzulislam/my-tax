@@ -2,6 +2,7 @@
 
 import { useFetchAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { Asset } from '@/types/taxpayer';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface AssetTableProps {
   taxYear: number;
@@ -46,14 +47,15 @@ const TYPE_LABELS: Record<string, { label: string; badge: string }> = {
 export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
   const { data: assets = [], isLoading, isError, error } = useFetchAssets(taxYear);
   const deleteMutation = useDeleteAsset();
+  const { showAlert, showConfirm } = useAlert();
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus aset "${name}"?`)) {
+    if (await showConfirm('Hapus Aset', `Apakah Anda yakin ingin menghapus aset "${name}"?`, 'Ya, Hapus', 'Batal')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Kesalahan tidak dikenal.';
-        alert(`Gagal menghapus data: ${message}`);
+        await showAlert('Gagal', `Gagal menghapus data: ${message}`, 'error');
       }
     }
   };
@@ -74,7 +76,7 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -173,6 +175,70 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-4 p-4">
+        {isLoading ? (
+          <div className="py-8 text-center text-slate-500 font-medium text-xs">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
+            Memuat daftar harta/aset...
+          </div>
+        ) : isError ? (
+          <div className="py-8 text-center text-red-400 font-medium text-xs">
+            Gagal memuat data: {error?.message}
+          </div>
+        ) : assets.length === 0 ? (
+          <div className="py-8 text-center text-slate-500 font-medium text-xs leading-relaxed">
+            Belum ada harta/aset yang tercatat untuk tahun pajak {taxYear}.
+          </div>
+        ) : (
+          assets.map((a) => (
+            <div key={a.id} className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4 space-y-3">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h5 className="font-bold text-white text-sm leading-tight">{a.assetName}</h5>
+                  <span
+                    className={`mt-1.5 inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                      TYPE_LABELS[a.assetType]?.badge || 'bg-slate-500/10 border-slate-500/30 text-slate-300'
+                    }`}
+                  >
+                    {TYPE_LABELS[a.assetType]?.label || a.assetType}
+                  </span>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    onClick={() => onEdit(a)}
+                    className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors border border-blue-500/20"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(a.id, a.assetName)}
+                    disabled={deleteMutation.isPending}
+                    className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/20"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs pt-3 border-t border-slate-800/50">
+                <div>
+                  <p className="text-slate-500 font-medium text-[10px] uppercase">Tahun Perolehan</p>
+                  <p className="font-mono text-slate-300 font-bold mt-0.5">{a.acquisitionYear}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500 font-medium text-[10px] uppercase">Nilai Perolehan</p>
+                  <p className="font-mono text-white font-bold mt-0.5">Rp {a.acquisitionValue.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-slate-500 font-medium text-[10px] uppercase">Nilai Pasar Saat Ini</p>
+                  <p className="font-mono text-blue-400 font-bold mt-0.5">Rp {(a.currentValue || a.acquisitionValue).toLocaleString('id-ID')}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {assets.length > 0 && (

@@ -9,6 +9,7 @@ import { useFetchChatSessions, useCreateChatSession, useDeleteChatSession } from
 import { useFetchChatMessages, useCreateChatMessage } from '@/hooks/useChatMessages';
 import { useAiTaxContext } from '@/hooks/useAiTaxContext';
 import { supabase } from '@/lib/supabase';
+import { useAlert } from '@/contexts/AlertContext';
 
 const MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.chat_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -578,6 +579,7 @@ function TrashIcon({ className }: { className?: string }) {
 }
 
 export default function AssistantPage() {
+  const { showAlert } = useAlert();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isComposingNewChat, setIsComposingNewChat] = useState(false);
   const [input, setInput] = useState('');
@@ -666,11 +668,11 @@ export default function AssistantPage() {
     setIsSettingsOpen(false);
   };
 
-  const handleCreateCustomPersona = () => {
+  const handleCreateCustomPersona = async () => {
     const name = newPersonaName.trim();
     const analogy = newPersonaAnalogy.trim();
     if (name.length < 2 || analogy.length < 8) {
-      alert('Isi nama persona minimal 2 karakter dan gaya analogi minimal 8 karakter.');
+      await showAlert('Validasi', 'Isi nama persona minimal 2 karakter dan gaya analogi minimal 8 karakter.', 'warning');
       return;
     }
 

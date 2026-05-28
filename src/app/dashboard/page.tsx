@@ -10,10 +10,13 @@ import AdvancedAnalyticsSection from '@/components/AdvancedAnalyticsSection';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+type TabType = 'overview' | 'analytics' | 'history' | 'calendar';
+
 function DashboardContent() {
   const { data: reports, isLoading, isError, error } = useFetchReports();
   const searchParams = useSearchParams();
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   useEffect(() => {
     const err = searchParams.get('error');
@@ -47,7 +50,7 @@ function DashboardContent() {
   const reportsData = reports || [];
 
   return (
-    <div className="space-y-6 md:space-y-12 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       
       {/* BANNER NOTIFIKASI ERROR (ROLE GUARD LIMITATION) */}
       {errorBanner && (
@@ -67,22 +70,60 @@ function DashboardContent() {
         </p>
       </div>
 
-      {/* Core Stats Overview */}
-      <DashboardStats data={reportsData} />
-
-      {/* Visual Analytics Trend Chart */}
-      <TaxTrendChart data={reportsData} />
-
-      <AdvancedAnalyticsSection reportsData={reportsData} />
-
-      {/* Sections: Tax History and Tax Calendar */}
-      <div className="space-y-5 md:space-y-8">
-        <TaxHistoryTable data={reportsData} />
-        <TaxCalendar />
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {[
+          { id: 'overview', label: 'Ringkasan' },
+          { id: 'analytics', label: 'Analitik' },
+          { id: 'history', label: 'Riwayat Laporan' },
+          { id: 'calendar', label: 'Kalender Pajak' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as TabType)}
+            className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+              activeTab === tab.id
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-      
-      {/* Floating Chat Assistant */}
 
+      {/* Tab Content Area */}
+      <div className="mt-4 animate-in fade-in zoom-in-95 duration-300">
+        {activeTab === 'overview' && (
+          <div className="space-y-6 md:space-y-8">
+            <DashboardStats data={reportsData} />
+            <TaxTrendChart data={reportsData} />
+            <TaxHistoryTable 
+              data={reportsData.slice(0, 3)} 
+              variant="compact" 
+              onViewAll={() => setActiveTab('history')} 
+            />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <AdvancedAnalyticsSection reportsData={reportsData} />
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div>
+            <TaxHistoryTable data={reportsData} />
+          </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <div>
+            <TaxCalendar />
+          </div>
+        )}
+      </div>
 
     </div>
   );
@@ -99,3 +140,4 @@ export default function DashboardPage() {
     </Suspense>
   );
 }
+

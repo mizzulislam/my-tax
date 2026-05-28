@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Tooltip from '@/components/Tooltip';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface Transaction {
   id: string;
@@ -81,6 +82,7 @@ CREATE POLICY "Users can update their own transactions" ON public.transactions F
 CREATE POLICY "Users can delete their own transactions" ON public.transactions FOR DELETE USING (auth.uid() = user_id);`;
 
 export default function TransactionsPage() {
+  const { showConfirm } = useAlert();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -215,7 +217,7 @@ export default function TransactionsPage() {
 
   // Hapus Transaksi
   const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
+    if (!(await showConfirm('Hapus Transaksi', 'Apakah Anda yakin ingin menghapus transaksi ini?', 'Ya, Hapus', 'Batal'))) return;
     try {
       const { error } = await supabase
         .from('transactions')

@@ -81,29 +81,42 @@ const TER_A_BRACKETS = [
   { limit: 6750000, rate: 0.01 },
   { limit: 7500000, rate: 0.0125 },
   { limit: 8550000, rate: 0.015 },
-  { limit: 9650000, rate: 0.02 },
-  { limit: 10950000, rate: 0.025 },
-  { limit: 13000000, rate: 0.03 },
-  { limit: 15000000, rate: 0.05 },
-  { limit: 19000000, rate: 0.06 },
-  { limit: 22600000, rate: 0.07 },
-  { limit: 26000000, rate: 0.08 },
-  { limit: 30000000, rate: 0.09 },
-  { limit: 36000000, rate: 0.10 },
-  { limit: 42000000, rate: 0.12 },
-  { limit: 49000000, rate: 0.15 },
-  { limit: 56000000, rate: 0.17 },
-  { limit: 64000000, rate: 0.19 },
-  { limit: 75000000, rate: 0.21 },
-  { limit: 87000000, rate: 0.23 },
-  { limit: 100000000, rate: 0.24 },
-  { limit: 151000000, rate: 0.25 },
-  { limit: 263000000, rate: 0.26 },
-  { limit: 378000000, rate: 0.27 },
-  { limit: 516000000, rate: 0.28 },
-  { limit: 714000000, rate: 0.29 },
-  { limit: 1002000000, rate: 0.31 },
-  { limit: 1400000000, rate: 0.32 },
+  { limit: 9650000, rate: 0.0175 },
+  { limit: 10050000, rate: 0.02 },
+  { limit: 10350000, rate: 0.0225 },
+  { limit: 10700000, rate: 0.025 },
+  { limit: 11050000, rate: 0.03 },
+  { limit: 11600000, rate: 0.035 },
+  { limit: 12500000, rate: 0.04 },
+  { limit: 13750000, rate: 0.05 },
+  { limit: 15100000, rate: 0.06 },
+  { limit: 16950000, rate: 0.07 },
+  { limit: 19750000, rate: 0.08 },
+  { limit: 24150000, rate: 0.09 },
+  { limit: 26450000, rate: 0.10 },
+  { limit: 28000000, rate: 0.11 },
+  { limit: 30050000, rate: 0.12 },
+  { limit: 32400000, rate: 0.13 },
+  { limit: 35400000, rate: 0.14 },
+  { limit: 39100000, rate: 0.15 },
+  { limit: 43850000, rate: 0.16 },
+  { limit: 47800000, rate: 0.17 },
+  { limit: 51400000, rate: 0.18 },
+  { limit: 56300000, rate: 0.19 },
+  { limit: 62200000, rate: 0.20 },
+  { limit: 68600000, rate: 0.21 },
+  { limit: 77500000, rate: 0.22 },
+  { limit: 89000000, rate: 0.23 },
+  { limit: 103000000, rate: 0.24 },
+  { limit: 125000000, rate: 0.25 },
+  { limit: 157000000, rate: 0.26 },
+  { limit: 206000000, rate: 0.27 },
+  { limit: 337000000, rate: 0.28 },
+  { limit: 454000000, rate: 0.29 },
+  { limit: 550000000, rate: 0.30 },
+  { limit: 695000000, rate: 0.31 },
+  { limit: 910000000, rate: 0.32 },
+  { limit: 1400000000, rate: 0.33 },
   { limit: Infinity, rate: 0.34 }
 ];
 
@@ -113,33 +126,41 @@ const TER_B_BRACKETS = [
   { limit: 6500000, rate: 0.0025 },
   { limit: 6850000, rate: 0.005 },
   { limit: 7300000, rate: 0.0075 },
-  { limit: 7800000, rate: 0.01 },
-  { limit: 8500000, rate: 0.0125 },
-  { limit: 9600000, rate: 0.015 },
-  { limit: 10700000, rate: 0.02 },
-  { limit: 12200000, rate: 0.025 },
-  { limit: 14000000, rate: 0.03 },
-  { limit: 16000000, rate: 0.04 },
-  { limit: 19000000, rate: 0.05 },
-  { limit: 23000000, rate: 0.06 },
-  { limit: 27000000, rate: 0.07 },
-  { limit: 31000000, rate: 0.08 },
-  { limit: 37000000, rate: 0.09 },
-  { limit: 43000000, rate: 0.10 },
-  { limit: 48000000, rate: 0.12 },
-  { limit: 54000000, rate: 0.15 },
-  { limit: 61000000, rate: 0.17 },
-  { limit: 69000000, rate: 0.19 },
-  { limit: 80000000, rate: 0.21 },
-  { limit: 92000000, rate: 0.23 },
-  { limit: 107000000, rate: 0.24 },
-  { limit: 161000000, rate: 0.25 },
-  { limit: 277000000, rate: 0.26 },
-  { limit: 396000000, rate: 0.27 },
-  { limit: 538000000, rate: 0.28 },
-  { limit: 745000000, rate: 0.29 },
-  { limit: 1045000000, rate: 0.31 },
-  { limit: 1455000000, rate: 0.32 },
+  { limit: 9200000, rate: 0.01 },
+  { limit: 10750000, rate: 0.015 },
+  { limit: 11250000, rate: 0.02 },
+  { limit: 11600000, rate: 0.025 },
+  { limit: 12600000, rate: 0.03 },
+  { limit: 13600000, rate: 0.04 },
+  { limit: 14950000, rate: 0.05 },
+  { limit: 16400000, rate: 0.06 },
+  { limit: 18450000, rate: 0.07 },
+  { limit: 21850000, rate: 0.08 },
+  { limit: 26000000, rate: 0.09 },
+  { limit: 27700000, rate: 0.10 },
+  { limit: 29350000, rate: 0.11 },
+  { limit: 31450000, rate: 0.12 },
+  { limit: 33950000, rate: 0.13 },
+  { limit: 37100000, rate: 0.14 },
+  { limit: 41100000, rate: 0.15 },
+  { limit: 45800000, rate: 0.16 },
+  { limit: 49500000, rate: 0.17 },
+  { limit: 53800000, rate: 0.18 },
+  { limit: 58500000, rate: 0.19 },
+  { limit: 64000000, rate: 0.20 },
+  { limit: 71000000, rate: 0.21 },
+  { limit: 80000000, rate: 0.22 },
+  { limit: 93000000, rate: 0.23 },
+  { limit: 109000000, rate: 0.24 },
+  { limit: 129000000, rate: 0.25 },
+  { limit: 163000000, rate: 0.26 },
+  { limit: 211000000, rate: 0.27 },
+  { limit: 374000000, rate: 0.28 },
+  { limit: 459000000, rate: 0.29 },
+  { limit: 555000000, rate: 0.30 },
+  { limit: 704000000, rate: 0.31 },
+  { limit: 957000000, rate: 0.32 },
+  { limit: 1405000000, rate: 0.33 },
   { limit: Infinity, rate: 0.34 }
 ];
 
@@ -149,33 +170,42 @@ const TER_C_BRACKETS = [
   { limit: 6950000, rate: 0.0025 },
   { limit: 7350000, rate: 0.005 },
   { limit: 7800000, rate: 0.0075 },
-  { limit: 8300000, rate: 0.01 },
-  { limit: 9000000, rate: 0.0125 },
-  { limit: 10050000, rate: 0.015 },
-  { limit: 11200000, rate: 0.02 },
-  { limit: 12800000, rate: 0.025 },
-  { limit: 15100000, rate: 0.03 },
-  { limit: 16900000, rate: 0.04 },
-  { limit: 19700000, rate: 0.05 },
-  { limit: 24100000, rate: 0.06 },
-  { limit: 28500000, rate: 0.07 },
-  { limit: 33000000, rate: 0.08 },
-  { limit: 38600000, rate: 0.09 },
-  { limit: 44600000, rate: 0.10 },
-  { limit: 50200000, rate: 0.12 },
-  { limit: 56400000, rate: 0.15 },
-  { limit: 63600000, rate: 0.17 },
-  { limit: 72400000, rate: 0.19 },
-  { limit: 84100000, rate: 0.21 },
-  { limit: 96500000, rate: 0.23 },
-  { limit: 111400000, rate: 0.24 },
-  { limit: 167000000, rate: 0.25 },
-  { limit: 286700000, rate: 0.26 },
-  { limit: 410500000, rate: 0.27 },
-  { limit: 558200000, rate: 0.28 },
-  { limit: 772300000, rate: 0.29 },
-  { limit: 1083100000, rate: 0.31 },
-  { limit: 1510000000, rate: 0.32 },
+  { limit: 8850000, rate: 0.01 },
+  { limit: 9800000, rate: 0.0125 },
+  { limit: 10950000, rate: 0.015 },
+  { limit: 11200000, rate: 0.0175 },
+  { limit: 12050000, rate: 0.02 },
+  { limit: 12950000, rate: 0.03 },
+  { limit: 14150000, rate: 0.04 },
+  { limit: 15550000, rate: 0.05 },
+  { limit: 17050000, rate: 0.06 },
+  { limit: 19500000, rate: 0.07 },
+  { limit: 22700000, rate: 0.08 },
+  { limit: 26600000, rate: 0.09 },
+  { limit: 28100000, rate: 0.10 },
+  { limit: 30100000, rate: 0.11 },
+  { limit: 32600000, rate: 0.12 },
+  { limit: 35400000, rate: 0.13 },
+  { limit: 38900000, rate: 0.14 },
+  { limit: 43000000, rate: 0.15 },
+  { limit: 47400000, rate: 0.16 },
+  { limit: 51200000, rate: 0.17 },
+  { limit: 55800000, rate: 0.18 },
+  { limit: 60400000, rate: 0.19 },
+  { limit: 66700000, rate: 0.20 },
+  { limit: 74500000, rate: 0.21 },
+  { limit: 83200000, rate: 0.22 },
+  { limit: 95600000, rate: 0.23 },
+  { limit: 110000000, rate: 0.24 },
+  { limit: 134000000, rate: 0.25 },
+  { limit: 169000000, rate: 0.26 },
+  { limit: 221000000, rate: 0.27 },
+  { limit: 390000000, rate: 0.28 },
+  { limit: 463000000, rate: 0.29 },
+  { limit: 561000000, rate: 0.30 },
+  { limit: 709000000, rate: 0.31 },
+  { limit: 965000000, rate: 0.32 },
+  { limit: 1419000000, rate: 0.33 },
   { limit: Infinity, rate: 0.34 }
 ];
 
@@ -209,6 +239,103 @@ export function getMonthlyTerRate(grossMonthly: number, ptkpStatus: string): num
 export function calculateMonthlyTerTax(grossMonthly: number, ptkpStatus: string): number {
   const rate = getMonthlyTerRate(grossMonthly, ptkpStatus);
   return Math.round(grossMonthly * rate);
+}
+
+// --- PPh 21 Final ---
+export type Pph21FinalObject = 'pesangon' | 'pensiun' | 'honorarium_apbn';
+
+export function calculatePph21Final(grossIncome: number, taxObject: Pph21FinalObject, pnsGolongan: string = 'III'): { taxDue: number; ratePercent: number } {
+  let taxDue = 0;
+  let ratePercent = 0;
+
+  if (taxObject === 'pesangon') {
+    if (grossIncome <= 50000000) {
+      taxDue = 0;
+      ratePercent = 0;
+    } else if (grossIncome <= 100000000) {
+      taxDue = (grossIncome - 50000000) * 0.05;
+      ratePercent = 5;
+    } else if (grossIncome <= 500000000) {
+      taxDue = (50000000 * 0.05) + ((grossIncome - 100000000) * 0.15);
+      ratePercent = 15;
+    } else {
+      taxDue = (50000000 * 0.05) + (400000000 * 0.15) + ((grossIncome - 500000000) * 0.25);
+      ratePercent = 25;
+    }
+  } else if (taxObject === 'pensiun') {
+    if (grossIncome <= 50000000) {
+      taxDue = 0;
+      ratePercent = 0;
+    } else {
+      taxDue = (grossIncome - 50000000) * 0.05;
+      ratePercent = 5;
+    }
+  } else if (taxObject === 'honorarium_apbn') {
+    if (pnsGolongan === 'I_II') {
+      taxDue = 0;
+      ratePercent = 0;
+    } else if (pnsGolongan === 'III') {
+      taxDue = grossIncome * 0.05;
+      ratePercent = 5;
+    } else if (pnsGolongan === 'IV') {
+      taxDue = grossIncome * 0.15;
+      ratePercent = 15;
+    }
+  }
+
+  return { taxDue: Math.round(taxDue), ratePercent };
+}
+
+// --- PPh 21 Tidak Final ---
+export type Pph21TidakFinalCategory = 
+  | '21-100-03'
+  | '21-100-04'
+  | '21-100-05'
+  | '21-100-06'
+  | '21-100-07'
+  | '21-100-08'
+  | '21-100-09'
+  | '21-100-10'
+  | '21-100-11'
+  | '21-100-12'
+  | '21-100-13';
+
+export type Pph21TidakFinalJenis = 'non_bulanan' | 'bulanan' | null;
+
+export function calculatePph21TidakFinal(
+  grossIncome: number, 
+  category: Pph21TidakFinalCategory, 
+  hasNpwp: boolean, 
+  jenis: Pph21TidakFinalJenis = null
+): { dpp: number; taxDue: number; ratePercent: number } {
+  let dpp = 0;
+  
+  // DPP 50% untuk distributor MLM, agen asuransi, penjaja barang, tenaga ahli, seniman, bukan pegawai lainnya
+  if (['21-100-04', '21-100-05', '21-100-06', '21-100-07', '21-100-08', '21-100-09'].includes(category)) {
+    dpp = grossIncome * 0.5;
+  } else {
+    // DPP 100% untuk dewan komisaris, mantan pegawai, penarikan pensiun, peserta kegiatan, pegawai tidak tetap
+    dpp = grossIncome;
+  }
+
+  // Tarif Pasal 17
+  let ratePercent = 5;
+  if (dpp <= 60000000) ratePercent = 5;
+  else if (dpp <= 250000000) ratePercent = 15;
+  else if (dpp <= 500000000) ratePercent = 25;
+  else if (dpp <= 5000000000) ratePercent = 30;
+  else ratePercent = 35;
+
+  let finalRate = ratePercent / 100;
+  
+  // Tanpa NPWP dikenakan tarif 20% lebih tinggi
+  if (!hasNpwp) {
+    finalRate = finalRate * 1.2;
+  }
+
+  let taxDue = dpp * finalRate;
+
+  return { dpp, taxDue: Math.round(taxDue), ratePercent: hasNpwp ? ratePercent : ratePercent * 1.2 };
 }
 
 export interface Pph21AnnualInput {
@@ -382,7 +509,7 @@ export function calculateUmkmTax(annualOmzet: number): number {
   return (annualOmzet - 500000000) * 0.005;
 }
 
-export type VatMode = 'standard' | 'non_luxury_2025';
+export type VatMode = '11_percent' | '12_percent';
 
 export interface VatResult {
   dpp: number;
@@ -392,19 +519,23 @@ export interface VatResult {
 }
 
 /**
- * Menghitung PPN. Mulai 2025 tarif umum 12%, dengan DPP nilai lain 11/12
- * untuk BKP/JKP non-mewah sehingga beban efektif tetap 11%.
+ * Menghitung PPN dengan opsi sudah termasuk pajak atau belum.
  */
-export function calculateVat(amount: number, mode: VatMode = 'non_luxury_2025'): VatResult {
+export function calculateVat(amount: number, mode: VatMode = '11_percent', includeTax = false): VatResult {
   const safeAmount = Math.max(0, amount);
-  const rate = 0.12;
-  const dpp = mode === 'non_luxury_2025' ? safeAmount * (11 / 12) : safeAmount;
+  const rate = mode === '11_percent' ? 0.11 : 0.12;
+  
+  let dpp = safeAmount;
+  if (includeTax) {
+    dpp = safeAmount / (1 + rate);
+  }
+
   const tax = Math.round(dpp * rate);
 
   return {
-    dpp,
+    dpp: Math.round(dpp),
     rate,
-    effectiveRate: safeAmount > 0 ? tax / safeAmount : 0,
+    effectiveRate: rate,
     tax,
   };
 }
@@ -417,21 +548,26 @@ export interface WithholdingTaxResult {
   tax: number;
 }
 
-export function calculatePph23(amount: number, object: Pph23Object, withoutNpwp = false): WithholdingTaxResult {
-  const base = Math.max(0, amount);
+export function calculatePph23(amount: number, object: Pph23Object, withoutNpwp = false, isGrossUp = false): WithholdingTaxResult {
+  const baseAmount = Math.max(0, amount);
   const baseRate = object === 'royalty_dividend_interest' ? 0.15 : 0.02;
   const rate = withoutNpwp ? baseRate * 2 : baseRate;
 
+  let dpp = baseAmount;
+  if (isGrossUp) {
+    dpp = baseAmount / (1 - rate);
+  }
+
   return {
-    base,
+    base: Math.round(dpp),
     rate,
-    tax: Math.round(base * rate),
+    tax: Math.round(dpp * rate),
   };
 }
 
 export type Pph26Object = 'gross_income' | 'asset_transfer' | 'insurance_premium';
 
-export function calculatePph26(amount: number, object: Pph26Object = 'gross_income', treatyRate?: number): WithholdingTaxResult {
+export function calculatePph26(amount: number, object: Pph26Object = 'gross_income', treatyRate?: number, isGrossUp = false): WithholdingTaxResult {
   const base = Math.max(0, amount);
   const treaty = treatyRate !== undefined ? Math.min(Math.max(treatyRate, 0), 1) : undefined;
   let rate = treaty ?? 0.20;
@@ -445,8 +581,14 @@ export function calculatePph26(amount: number, object: Pph26Object = 'gross_inco
     taxableBase = base * 0.50;
   }
 
+  if (isGrossUp) {
+    const effectiveRate = object === 'asset_transfer' ? rate * 0.25 : object === 'insurance_premium' ? rate * 0.50 : rate;
+    const grossedUpBase = base / (1 - effectiveRate);
+    taxableBase = object === 'asset_transfer' ? grossedUpBase * 0.25 : object === 'insurance_premium' ? grossedUpBase * 0.50 : grossedUpBase;
+  }
+
   return {
-    base: taxableBase,
+    base: Math.round(taxableBase),
     rate,
     tax: Math.round(taxableBase * rate),
   };
@@ -454,7 +596,7 @@ export function calculatePph26(amount: number, object: Pph26Object = 'gross_inco
 
 export type FinalTaxObject = 'umkm_individual' | 'umkm_entity' | 'land_building_rent' | 'land_building_transfer';
 
-export function calculateFinalTax(amount: number, object: FinalTaxObject): WithholdingTaxResult {
+export function calculateFinalTax(amount: number, object: FinalTaxObject, isGrossUp = false): WithholdingTaxResult {
   const base = Math.max(0, amount);
   let taxableBase = base;
   let rate = 0.005;
@@ -467,8 +609,12 @@ export function calculateFinalTax(amount: number, object: FinalTaxObject): Withh
     rate = 0.025;
   }
 
+  if (isGrossUp && object !== 'umkm_individual') {
+    taxableBase = base / (1 - rate);
+  }
+
   return {
-    base: taxableBase,
+    base: Math.round(taxableBase),
     rate,
     tax: Math.round(taxableBase * rate),
   };
@@ -558,14 +704,19 @@ export function calculateStampDuty(documentValue: number): number {
 
 export type PpnBmRateBand = '10' | '20' | '40' | '50' | '75';
 
-export function calculatePpnBm(dpp: number, rateBand: PpnBmRateBand): WithholdingTaxResult {
-  const base = Math.max(0, dpp);
+export function calculatePpnBm(amount: number, rateBand: PpnBmRateBand, includeTax = false): WithholdingTaxResult {
+  const baseAmount = Math.max(0, amount);
   const rate = Number(rateBand) / 100;
 
+  let dpp = baseAmount;
+  if (includeTax) {
+    dpp = baseAmount / (1 + rate);
+  }
+
   return {
-    base,
+    base: Math.round(dpp),
     rate,
-    tax: Math.round(base * rate),
+    tax: Math.round(dpp * rate),
   };
 }
 
@@ -750,10 +901,10 @@ export type PphUnificationObject =
   | 'pph15_domestic_shipping'
   | 'pph26_gross_income';
 
-export function calculatePphUnification(amount: number, object: PphUnificationObject, withoutNpwp = false): WithholdingTaxResult {
+export function calculatePphUnification(amount: number, object: PphUnificationObject, withoutNpwp = false, isGrossUp = false): WithholdingTaxResult {
   const base = Math.max(0, amount);
   let rate = 0.02;
-  const taxableBase = base;
+  let taxableBase = base;
   let canDoubleWithoutNpwp = false;
 
   if (object === 'pph22_government_goods') {
@@ -788,8 +939,12 @@ export function calculatePphUnification(amount: number, object: PphUnificationOb
     rate *= 2;
   }
 
+  if (isGrossUp) {
+    taxableBase = base / (1 - rate);
+  }
+
   return {
-    base: taxableBase,
+    base: Math.round(taxableBase),
     rate,
     tax: Math.round(taxableBase * rate),
   };

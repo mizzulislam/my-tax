@@ -4,10 +4,19 @@ import { useState } from 'react';
 
 interface TooltipProps {
   content: string;
+  align?: 'center' | 'right';
 }
 
-export default function Tooltip({ content }: TooltipProps) {
+export default function Tooltip({ content, align = 'center' }: TooltipProps) {
   const [visible, setVisible] = useState(false);
+
+  const alignmentClasses = align === 'right' 
+    ? 'right-0 translate-x-2' 
+    : 'left-1/2 -translate-x-1/2';
+
+  const arrowClasses = align === 'right'
+    ? 'right-3'
+    : 'left-1/2 -translate-x-1/2';
 
   return (
     <span className="relative inline-flex items-center ml-1.5 group cursor-help">
@@ -15,7 +24,10 @@ export default function Tooltip({ content }: TooltipProps) {
         type="button"
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
-        onClick={() => setVisible(!visible)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setVisible(!visible);
+        }}
         className="text-slate-500 hover:text-blue-400 transition-colors focus:outline-none flex items-center justify-center p-0.5"
         aria-label="Informasi regulasi perpajakan"
       >
@@ -23,9 +35,9 @@ export default function Tooltip({ content }: TooltipProps) {
       </button>
 
       {visible && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3.5 bg-slate-900/95 backdrop-blur-xl border border-slate-800 text-[11px] text-slate-300 rounded-2xl shadow-2xl z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200 leading-relaxed font-medium">
+        <span className={`absolute bottom-full mb-2 w-64 p-3.5 bg-slate-900/95 backdrop-blur-xl border border-slate-800 text-[11px] text-slate-300 rounded-2xl shadow-2xl z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200 leading-relaxed font-medium ${alignmentClasses}`}>
           <span className="relative z-10 block text-left">{content}</span>
-          <span className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-900"></span>
+          <span className={`absolute top-full border-[5px] border-transparent border-t-slate-900 ${arrowClasses}`}></span>
         </span>
       )}
     </span>

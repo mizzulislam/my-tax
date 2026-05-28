@@ -8,6 +8,7 @@ import ScenarioBuilder from '@/components/whatif/ScenarioBuilder';
 import ScenarioComparisonCard from '@/components/whatif/ScenarioComparisonCard';
 import { useWhatIfScenarios, useCreateScenario, useDeleteScenario } from '@/hooks/useWhatIfScenarios';
 import { useRouter } from 'next/navigation';
+import { useAlert } from '@/contexts/AlertContext';
 
 const MIGRATION_SQL = `-- 1. Buat Tabel Baru public.what_if_scenarios
 CREATE TABLE IF NOT EXISTS public.what_if_scenarios (
@@ -42,6 +43,7 @@ CREATE POLICY "User own scenarios DELETE" ON public.what_if_scenarios FOR DELETE
 
 export default function WhatIfPage() {
   const router = useRouter();
+  const { showAlert, showConfirm } = useAlert();
   
   const [isTableMissing, setIsTableMissing] = useState(false);
   const [checkingTable, setCheckingTable] = useState(true);
@@ -167,9 +169,9 @@ export default function WhatIfPage() {
 
   const { simGross: finalSimGross, simTax: finalSimTax, diff, pct } = computeSimulation();
 
-  const handleSaveScenario = () => {
+  const handleSaveScenario = async () => {
     if (!scenario.scenarioName) {
-      alert('Nama skenario wajib diisi.');
+      await showAlert('Peringatan', 'Nama skenario wajib diisi.', 'warning');
       return;
     }
     
@@ -200,7 +202,7 @@ export default function WhatIfPage() {
           simUmkmOmzet: 0,
           notes: ''
         });
-        alert('Skenario berhasil disimpan!');
+        showAlert('Berhasil', 'Skenario berhasil disimpan!', 'success');
       }
     });
   };
@@ -287,7 +289,7 @@ Bisakah Anda memberikan saran atau strategi perencanaan pajak lebih lanjut untuk
                   className="flex-1 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  Tanya AI Taxologist
+                  Tanya Tax Feyments
                 </button>
               </div>
             </div>
@@ -339,8 +341,8 @@ Bisakah Anda memberikan saran atau strategi perencanaan pajak lebih lanjut untuk
                       
                       <div className="mt-4 pt-4 border-t border-slate-800/80 flex justify-end">
                         <button 
-                          onClick={() => {
-                            if(confirm('Hapus skenario ini?')) deleteScenario(s.id);
+                          onClick={async () => {
+                            if(await showConfirm('Hapus Skenario', 'Hapus skenario ini?', 'Ya, Hapus', 'Batal')) deleteScenario(s.id);
                           }}
                           disabled={isDeleting}
                           className="text-xs text-red-400 hover:text-red-300 font-bold transition-colors disabled:opacity-50"

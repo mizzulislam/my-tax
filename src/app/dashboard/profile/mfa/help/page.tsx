@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const steps = [
   {
-    title: 'Login ke Akun Tax Feyments',
+    title: 'Login ke Akun My Tax',
     body: 'Secara umum, Anda akan diarahkan ke halaman dashboard dan dapat langsung melanjutkan ke pengaturan akun.',
   },
   {
@@ -15,7 +15,7 @@ const steps = [
   },
   {
     title: 'Verifikasi Kode 2FA',
-    body: 'Setelah QR code dipindai, Google Authenticator akan menampilkan kode enam digit untuk akun Tax Feyments Anda. Masukkan kode tersebut ke halaman Two-Factor Authentication, lalu klik Verifikasi 2FA.',
+    body: 'Setelah QR code dipindai, Google Authenticator akan menampilkan kode enam digit untuk akun My Tax Anda. Masukkan kode tersebut ke halaman Two-Factor Authentication, lalu klik Verifikasi 2FA.',
   },
   {
     title: 'Verifikasi 2FA Berhasil',
@@ -38,10 +38,10 @@ export default function MfaHelpPage() {
           <div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-blue-400">Panduan Keamanan</p>
             <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-white md:text-4xl">
-              Cara Mengaktifkan Two-Factor Authentication (2FA) di Akun Tax Feyments
+              Cara Mengaktifkan Two-Factor Authentication (2FA) di Akun My Tax
             </h1>
             <p className="mt-4 max-w-3xl text-sm font-medium leading-relaxed text-slate-400">
-              Keamanan akun menjadi salah satu prioritas utama dalam dunia digital. Oleh karena itu, Tax Feyments menyediakan fitur Two-Factor Authentication (2FA) untuk melindungi akun Anda dari akses tidak sah.
+              Keamanan akun menjadi salah satu prioritas utama dalam dunia digital. Oleh karena itu, My Tax menyediakan fitur Two-Factor Authentication (2FA) untuk melindungi akun Anda dari akses tidak sah.
             </p>
           </div>
           <Link
@@ -69,9 +69,9 @@ export default function MfaHelpPage() {
               </p>
             </div>
             <div className="rounded-2xl border border-slate-800/70 bg-slate-900/45 p-5">
-              <h3 className="font-bold text-white">Akses Akun Tax Feyments</h3>
+              <h3 className="font-bold text-white">Akses Akun My Tax</h3>
               <p className="mt-2 text-sm font-medium leading-relaxed text-slate-400">
-                Login ke akun Tax Feyments Anda melalui website Tax Feyments, lalu masuk ke halaman Pengaturan Akun.
+                Login ke akun My Tax Anda melalui website My Tax, lalu masuk ke halaman Pengaturan Akun.
               </p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function MfaHelpPage() {
 
         <div className="mt-10 border-t border-slate-800/70 pt-6">
           <p className="text-sm font-medium leading-relaxed text-slate-400">
-            Dengan mengaktifkan 2FA, keamanan akun Tax Feyments Anda telah ditingkatkan. Nikmati pengalaman belajar, mengelola pajak, dan beraktivitas di Tax Feyments dengan lebih tenang.
+            Dengan mengaktifkan 2FA, keamanan akun My Tax Anda telah ditingkatkan. Nikmati pengalaman belajar, mengelola pajak, dan beraktivitas di My Tax dengan lebih tenang.
           </p>
         </div>
       </article>

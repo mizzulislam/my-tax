@@ -9,6 +9,7 @@ import StreakCounter from '@/components/StreakCounter';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 import { useQueryClient } from '@tanstack/react-query';
 import TaxAssistantChat from '@/components/TaxAssistantChat';
+import TourGuide from '@/components/TourGuide';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,13 +37,20 @@ export default function DashboardShell({ children, userEmail, userName, userHand
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const clearStore = useTaxpayerStore((state) => state.clearStore);
+  const storeProfile = useTaxpayerStore((state) => state.profile);
+  
+  const displayUserName = storeProfile?.fullName || userName;
+  const displayUserHandle = storeProfile?.username || userHandle;
+  const displayAvatarUrl = storeProfile?.avatarUrl || avatarUrl;
+
   const [sidebarOpen, setSidebarOpen] = useState(false); // Untuk Drawer Mobile
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Untuk Minimize Desktop
-  const [sidebarContentHidden, setSidebarContentHidden] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Untuk Minimize Desktop
+  const [sidebarContentHidden, setSidebarContentHidden] = useState(true);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({});
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [canHoverPointer, setCanHoverPointer] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const sidebarCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsedItemClass = 'mx-auto flex h-11 w-11 items-center justify-center rounded-2xl p-0 [&_svg]:h-[18px] [&_svg]:w-[18px]';
@@ -58,8 +66,18 @@ export default function DashboardShell({ children, userEmail, userName, userHand
     updatePointerMode();
     hoverQuery.addEventListener('change', updatePointerMode);
 
-    return () => hoverQuery.removeEventListener('change', updatePointerMode);
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      hoverQuery.removeEventListener('change', updatePointerMode);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
+
+  const effectiveCollapsed = isMobile ? false : sidebarCollapsed;
+  const effectiveContentHidden = isMobile ? false : sidebarContentHidden;
 
   useEffect(() => {
     if (!profileDropdownOpen) return;
@@ -158,7 +176,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
           icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>,
         },
         {
-          name: 'AI Taxologist',
+          name: 'Tax Feyments',
           href: '/dashboard/assistant',
           icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>,
         },
@@ -215,29 +233,33 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
       {/* SIDEBAR PANEL */}
       <aside
-        className={`fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform,padding,box-shadow] transition-[width,transform,padding,box-shadow] ${sidebarPanelMotionClass} lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0 max-lg:shadow-2xl max-lg:shadow-slate-950/60' : '-translate-x-full'} ${sidebarCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
+        className={`fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform,padding,box-shadow] transition-[width,transform,padding,box-shadow] ${sidebarPanelMotionClass} lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0 max-lg:shadow-2xl max-lg:shadow-slate-950/60' : '-translate-x-full'} ${effectiveCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           {/* Logo & Brand */}
-          <div className={`group/header relative flex transition-[height,margin,padding] ${sidebarPanelMotionClass} ${sidebarCollapsed ? 'items-center justify-center py-4 mb-2 h-16' : 'items-center justify-between py-3 mb-5 h-14'}`}>
-            <div className={`flex min-w-0 items-center transition-[gap,opacity,transform] ${sidebarPanelMotionClass} ${sidebarCollapsed ? 'gap-0 group-hover/header:opacity-0 group-hover/header:scale-90' : 'gap-3'}`}>
-              <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-300 shadow-[0_0_24px_rgba(59,130,246,0.26)] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/header:scale-105 motion-reduce:transition-none">
-                <div className="absolute inset-[1.5px] rounded-[10.5px] bg-slate-950/30" />
-                <svg className="relative h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+          <div className={`group/header relative flex transition-[height,margin,padding] ${sidebarPanelMotionClass} ${effectiveCollapsed ? 'items-center justify-center py-4 mb-2 h-16' : 'items-center justify-between py-3 mb-5 h-14'}`}>
+            <div className={`flex min-w-0 items-center transition-[gap,opacity,transform] ${sidebarPanelMotionClass} ${effectiveCollapsed ? 'gap-0 group-hover/header:opacity-0 group-hover/header:scale-90' : 'gap-3'}`}>
+              <div className="relative flex flex-shrink-0 items-center transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/header:scale-105 motion-reduce:transition-none">
+                <img 
+                  src="/logos/my-tax-logo-icon.svg" 
+                  alt="My Tax Icon" 
+                  className="h-8 w-8 object-contain"
+                />
               </div>
-
-              <div className={`flex flex-col overflow-hidden transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 -translate-x-2 opacity-0' : 'max-w-[210px] translate-x-0 opacity-100 delay-100'}`}>
-                <span className="block whitespace-nowrap text-xl font-bold tracking-wide text-white">Tax Feyments</span>
+              <div className={`flex flex-col overflow-hidden transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${effectiveContentHidden ? 'max-w-0 -translate-x-2 opacity-0' : 'max-w-[210px] translate-x-0 opacity-100 delay-100'}`}>
+                <img 
+                  src="/logos/my-tax-logo-text.svg" 
+                  alt="My Tax Text" 
+                  className="h-[24px] ml-1 w-auto object-contain object-left"
+                />
               </div>
             </div>
 
             <button
               type="button"
               onClick={toggleSidebar}
-              className={`group/toggle flex h-10 w-10 items-center justify-center text-slate-400 transition-[opacity,transform,background-color,color] ${sidebarPanelMotionClass} hover:bg-white/[0.08] hover:text-white z-10 ${sidebarCollapsed ? `absolute rounded-2xl ${canHoverPointer ? 'opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:scale-100' : 'opacity-100 scale-100 bg-white/[0.055]'}` : 'relative rounded-full opacity-100 scale-100'}`}
-              aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+              className={`group/toggle flex h-10 w-10 items-center justify-center text-slate-400 transition-[opacity,transform,background-color,color] ${sidebarPanelMotionClass} hover:bg-white/[0.08] hover:text-white z-10 ${effectiveCollapsed ? `absolute rounded-2xl ${canHoverPointer ? 'opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:scale-100' : 'opacity-100 scale-100 bg-white/[0.055]'}` : 'relative rounded-full opacity-100 scale-100'}`}
+              aria-label={effectiveCollapsed ? "Buka sidebar" : "Tutup sidebar"}
             >
               <svg className="absolute h-5 w-5 opacity-100 transition duration-200 group-hover/toggle:opacity-0 motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" strokeWidth="2" />
@@ -246,28 +268,28 @@ export default function DashboardShell({ children, userEmail, userName, userHand
               <svg className="absolute h-5 w-5 opacity-0 transition duration-200 group-hover/toggle:opacity-100 motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" strokeWidth="2" />
                 <path d="M9 3v18" strokeWidth="2" strokeLinecap="round" />
-                <path d={sidebarCollapsed ? "m13 15 3-3-3-3" : "m15 15-3-3 3-3"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={effectiveCollapsed ? "m13 15 3-3-3-3" : "m15 15-3-3 3-3"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-4 -translate-y-1/2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 opacity-0 shadow-xl transition group-hover/toggle:opacity-100">
-                {sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+                {effectiveCollapsed ? "Buka sidebar" : "Tutup sidebar"}
               </span>
             </button>
           </div>
 
           {/* Navigation Links */}
-          <nav className={`min-h-0 flex-1 transition-[padding] ${sidebarPanelMotionClass} [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${sidebarCollapsed ? 'space-y-2 overflow-visible' : 'space-y-2 overflow-y-auto overflow-x-hidden pr-1'}`}>
+          <nav className={`min-h-0 flex-1 transition-[padding] ${sidebarPanelMotionClass} [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${effectiveCollapsed ? 'space-y-2 overflow-visible' : 'space-y-2 overflow-y-auto overflow-x-hidden pr-1'}`}>
             {navItems.map((item, index) => {
               const isActive = isGroupActive(item);
               const isOpen = Boolean(openNavGroups[item.name]);
-              const itemDelay = sidebarContentHidden ? '0ms' : `${140 + index * 55}ms`;
+              const itemDelay = effectiveContentHidden ? '0ms' : `${140 + index * 55}ms`;
 
               if (item.children) {
                 return (
-                  <div key={item.name} className={`${sidebarCollapsed ? 'block relative' : 'space-y-1'} transition-[opacity,transform] ${sidebarItemMotionClass}`} style={{ transitionDelay: itemDelay }}>
+                  <div key={item.name} className={`${effectiveCollapsed ? 'block relative' : 'space-y-1'} transition-[opacity,transform] ${sidebarItemMotionClass}`} style={{ transitionDelay: itemDelay }}>
                     <button
                       type="button"
                       onClick={() => {
-                        if (sidebarCollapsed || sidebarContentHidden) {
+                        if (effectiveCollapsed || effectiveContentHidden) {
                           if (sidebarCollapseTimeoutRef.current) {
                             clearTimeout(sidebarCollapseTimeoutRef.current);
                             sidebarCollapseTimeoutRef.current = null;
@@ -280,28 +302,28 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                           setOpenNavGroups((current) => ({ ...current, [item.name]: !current[item.name] }));
                         }
                       }}
-                      className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${sidebarCollapsed ? collapsedItemClass : 'w-full rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
+                      className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${effectiveCollapsed ? collapsedItemClass : 'w-full rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
                       aria-expanded={isOpen}
                     >
                       <span className={`${isActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'} flex-shrink-0 transition-colors duration-200`}>
                         {item.icon}
                       </span>
 
-                      <span className={`overflow-hidden origin-left truncate text-left transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
+                      <span className={`overflow-hidden origin-left truncate text-left transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${effectiveContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
                         {item.name}
                       </span>
 
-                      <span className={`${sidebarContentHidden ? 'absolute opacity-0 scale-75 pointer-events-none' : 'ml-auto opacity-100'} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md text-lg font-light leading-none transition-[opacity,transform,color] ${sidebarItemMotionClass} ${isOpen ? 'text-blue-200 rotate-180' : 'text-slate-500 group-hover:text-slate-300 rotate-0'}`} style={{ transitionDelay: itemDelay }}>
+                      <span className={`${effectiveContentHidden ? 'absolute opacity-0 scale-75 pointer-events-none' : 'ml-auto opacity-100'} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md text-lg font-light leading-none transition-[opacity,transform,color] ${sidebarItemMotionClass} ${isOpen ? 'text-blue-200 rotate-180' : 'text-slate-500 group-hover:text-slate-300 rotate-0'}`} style={{ transitionDelay: itemDelay }}>
                         {isOpen ? '-' : '+'}
                       </span>
-                      {sidebarCollapsed && (
+                      {effectiveCollapsed && (
                         <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 opacity-0 shadow-xl transition group-hover:opacity-100">
                           {item.name}
                         </span>
                       )}
                     </button>
 
-                    <div className={`grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen && !sidebarCollapsed ? 'grid-rows-[1fr] opacity-100 translate-y-0' : 'grid-rows-[0fr] opacity-0 -translate-y-1'}`}>
+                    <div className={`grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen && !effectiveCollapsed ? 'grid-rows-[1fr] opacity-100 translate-y-0' : 'grid-rows-[0fr] opacity-0 -translate-y-1'}`}>
                       <div className="overflow-hidden">
                         <div className="ml-6 mt-1 space-y-1 border-l border-slate-800/80 pl-3">
                           {item.children.map((child) => {
@@ -332,17 +354,17 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                   key={item.name}
                   href={item.href || '#'}
                   onClick={() => setSidebarOpen(false)}
-                  className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${sidebarCollapsed ? collapsedItemClass : 'rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
+                  className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${effectiveCollapsed ? collapsedItemClass : 'rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
                   style={{ transitionDelay: itemDelay }}
                 >
                   <span className={`${isActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'} flex-shrink-0 transition-colors duration-200`}>
                     {item.icon}
                   </span>
 
-                  <span className={`overflow-hidden origin-left truncate transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
+                  <span className={`overflow-hidden origin-left truncate transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${effectiveContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
                     {item.name}
                   </span>
-                  {sidebarCollapsed && (
+                  {effectiveCollapsed && (
                     <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 opacity-0 shadow-xl transition group-hover:opacity-100">
                       {item.name}
                     </span>
@@ -357,7 +379,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
       {/* MAIN VIEW AREA */}
       <div
-        className={`flex min-w-0 flex-col overflow-y-auto h-screen relative z-10 transform-gpu will-change-transform transition-transform ${sidebarPanelMotionClass} lg:pl-[68px] ${sidebarCollapsed ? 'lg:translate-x-0' : 'lg:translate-x-[252px]'}`}
+        className={`flex min-w-0 flex-col overflow-y-auto h-screen relative z-10 transform-gpu will-change-transform transition-transform ${sidebarPanelMotionClass} lg:pl-[68px] ${effectiveCollapsed ? 'lg:translate-x-0' : 'lg:translate-x-[252px]'}`}
       >
 
         {/* HEADER BAR */}
@@ -399,15 +421,15 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                 {/* Avatar / Initials Circle */}
                 <div
                   className="w-7 h-7 rounded-md bg-blue-600/10 border border-blue-500/20 bg-cover bg-center flex items-center justify-center text-[10px] font-black text-blue-400 uppercase flex-shrink-0 overflow-hidden"
-                  style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+                  style={displayAvatarUrl ? { backgroundImage: `url(${displayAvatarUrl})` } : undefined}
                 >
-                  {!avatarUrl && (userName ? userName.substring(0, 2) : (userEmail ? userEmail.substring(0, 2) : 'US'))}
+                  {!displayAvatarUrl && (displayUserName ? displayUserName.substring(0, 2) : (userEmail ? userEmail.substring(0, 2) : 'US'))}
                 </div>
 
                 {/* User Name & Email Stacked */}
                 <div className="flex flex-col text-left hidden sm:flex">
                   <span className="text-[11px] font-extrabold text-white leading-tight truncate max-w-[130px]">
-                    {userHandle || userName || 'Wajib Pajak'}
+                    {displayUserHandle || displayUserName || 'Wajib Pajak'}
                   </span>
                   <span className="text-[8px] text-slate-500 font-bold block truncate max-w-[130px] mt-0.5 leading-none">
                     {userEmail}
@@ -422,8 +444,8 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                 <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-800/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 space-y-3">
                   <div className="border-b border-slate-900 pb-3">
                       <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Wajib Pajak Aktif</span>
-                      <span className="text-xs font-bold text-white block mt-0.5 truncate" title={userName || userEmail || ''}>
-                        {userName || userEmail}
+                      <span className="text-xs font-bold text-white block mt-0.5 truncate" title={displayUserName || userEmail || ''}>
+                        {displayUserName || userEmail}
                       </span>
                     </div>
 
@@ -498,6 +520,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
       </div>
 
       <TaxAssistantChat />
+      <TourGuide />
     </div>
   );
 }

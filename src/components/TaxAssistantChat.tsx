@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Children, isValidElement } from 'react';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import ChatQuiz from '@/components/ChatQuiz';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useFetchChatSessions, useCreateChatSession } from '@/hooks/useChatSessions';
 import { useFetchChatMessages, useCreateChatMessage } from '@/hooks/useChatMessages';
 import { useAiTaxContext } from '@/hooks/useAiTaxContext';
 import { supabase } from '@/lib/supabase';
+import { useAlert } from '@/contexts/AlertContext';
 
 export default function TaxAssistantChat() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { showAlert } = useAlert();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +54,7 @@ export default function TaxAssistantChat() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     if (isChatTableMissing) {
-      alert('Tabel chat Fase 6 belum dibuat. Buka halaman AI Assistant untuk melihat SQL migrasi.');
+      await showAlert('Perhatian', 'Tabel chat Fase 6 belum dibuat. Buka halaman AI Assistant untuk melihat SQL migrasi.', 'warning');
       return;
     }
 
@@ -125,11 +132,15 @@ export default function TaxAssistantChat() {
       setTempMessage('');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Gagal memproses jawaban AI.';
-      alert(`Error: ${message}`);
+      await showAlert('Gagal', `Error: ${message}`, 'error');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (pathname === '/dashboard/assistant' || pathname.startsWith('/dashboard/assistant/')) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -142,7 +153,7 @@ export default function TaxAssistantChat() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
               </div>
               <div>
-                <h3 className="font-bold text-white text-sm">AI Taxologist</h3>
+                <h3 className="font-bold text-white text-sm">Tax Feyments</h3>
                 <p className="text-xs text-blue-400">Asisten Konsultan Pajak Ahli</p>
               </div>
             </div>
@@ -173,18 +184,126 @@ export default function TaxAssistantChat() {
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 rounded-tl-sm'}`}>
                   {msg.role === 'ai' ? (
-                    <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700">
+                    <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7] prose-pre:p-0 prose-pre:m-0 prose-pre:bg-transparent">
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
-                          code({ children, ...props }) {
+                          pre({ children }) {
+                            const childrenArray = Children.toArray(children);
+                            const isQuiz = childrenArray.some((child) => {
+                              if (!isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
+                                return false;
+                              }
+                              return (
+                                child.props.className?.includes('language-quiz') ||
+                                String(child.props.children || '').includes('"quizzes"')
+                              );
+                            });
+                            if (isQuiz) {
+                              return <>{children}</>;
+                            }
                             return (
-                              <code className="bg-transparent px-0 py-0 rounded-none border-0 text-blue-400 font-sans font-bold" {...props}>
+                              <pre className="my-4 overflow-x-auto rounded-2xl bg-slate-950 border border-slate-700 p-4 font-mono text-xs text-slate-300">
+                                {children}
+                              </pre>
+                            );
+                          },
+                          hr() {
+                            return <hr className="border-slate-800/30 my-6" />;
+                          },
+                          code({ className, children, ...props }) {
+                            const match = /language-quiz/.exec(className || '');
+                            const isQuiz = match || className?.includes('language-quiz') || String(children).includes('"quizzes"');
+                            if (isQuiz) {
+                              return <ChatQuiz content={String(children)} isGenerating={isLoading} />;
+                            }
+                            return (
+                              <code className="bg-transparent px-0 py-0 rounded-none text-blue-400 font-sans font-bold text-[12px] sm:text-[13px] border-0" {...props}>
                                 {children}
                               </code>
                             );
                           },
+                          blockquote({ children }) {
+                            return (
+                              <div className="my-5 p-5 bg-gradient-to-br from-indigo-950/30 to-blue-950/20 border-l-4 border-blue-500 rounded-r-3xl text-slate-300 italic shadow-[inset_0_1px_3px_rgba(59,130,246,0.05)] relative overflow-hidden">
+                                <span className="absolute -top-2 -left-1 text-6xl font-serif text-blue-500/10 select-none pointer-events-none">“</span>
+                                <div className="relative z-10 text-[13px] sm:text-[14px] leading-[1.7]">{children}</div>
+                              </div>
+                            );
+                          },
+                          h3({ children }) {
+                            return (
+                              <div className="mt-6 mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-950/40 to-slate-900/60 border border-blue-500/20 border-l-4 border-l-blue-500 text-white font-black text-xs sm:text-sm flex items-center gap-3 shadow-[0_4px_20px_rgba(59,130,246,0.05)] select-none">
+                                {children}
+                              </div>
+                            );
+                          },
+                          h4({ children }) {
+                            return <h4 className="text-xs font-black text-slate-300 mt-5 mb-2.5 uppercase tracking-wider">{children}</h4>;
+                          },
                           strong({ children }) {
-                            return <strong className="bg-transparent px-0 py-0 rounded-none border-0 text-blue-400 font-black">{children}</strong>;
+                            return (
+                              <strong className="text-blue-400 font-black bg-transparent px-0 py-0 rounded-none border-0 inline">
+                                {children}
+                              </strong>
+                            );
+                          },
+                          p({ children }) {
+                            return <p className="text-[13px] sm:text-[14px] leading-[1.7] text-slate-300 mb-4 whitespace-normal break-words">{children}</p>;
+                          },
+                          ul({ children }) {
+                            return <ul className="list-disc pl-5 space-y-2 mb-4 text-[13px] sm:text-[14px] text-slate-300 leading-[1.7]">{children}</ul>;
+                          },
+                          ol({ children }) {
+                            return <ol className="list-decimal pl-5 space-y-2 mb-4 text-[13px] sm:text-[14px] text-slate-300 leading-[1.7]">{children}</ol>;
+                          },
+                          li({ children }) {
+                            return <li className="leading-[1.7] hover:text-slate-200 transition-colors duration-150">{children}</li>;
+                          },
+                          table({ children }) {
+                            return (
+                              <div className="overflow-x-auto my-5 rounded-2xl border border-slate-700 bg-slate-950/40 backdrop-blur-sm shadow-xl max-w-full">
+                                <table className="w-full text-left border-collapse text-xs sm:text-sm text-slate-300">
+                                  {children}
+                                </table>
+                              </div>
+                            );
+                          },
+                          thead({ children }) {
+                            return <thead className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-b border-slate-700 text-white select-none">{children}</thead>;
+                          },
+                          th({ children }) {
+                            return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400">{children}</th>;
+                          },
+                          td({ children }) {
+                            const text = Array.isArray(children) 
+                              ? children.map(c => String(c)).join('').trim() 
+                              : String(children).trim();
+                            const pctMatch = /^(\d+(?:\.\d+)?)\s*%$/.exec(text);
+                            if (pctMatch) {
+                              const value = parseFloat(pctMatch[1]);
+                              return (
+                                <td className="p-4 border-r border-slate-700 last:border-r-0 border-b border-slate-700 last:border-b-0 font-extrabold text-blue-400">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-xs">{text}</span>
+                                    <div className="w-12 h-1.5 bg-slate-950 rounded-full overflow-hidden hidden xs:block">
+                                      <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${Math.min(100, value * 2)}%` }}></div>
+                                    </div>
+                                  </div>
+                                </td>
+                              );
+                            }
+                            return (
+                              <td className="p-4 border-r border-slate-700 last:border-r-0 border-b border-slate-700 last:border-b-0 font-medium">
+                                {children}
+                              </td>
+                            );
+                          },
+                          tr({ children }) {
+                            return <tr className="hover:bg-blue-500/5 border-b border-slate-700 last:border-b-0 transition-colors duration-150">{children}</tr>;
+                          },
+                          a({ href, children }) {
+                            return <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-bold transition-colors">{children}</a>;
                           },
                         }}
                       >
@@ -201,18 +320,126 @@ export default function TaxAssistantChat() {
             {tempMessage && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-md bg-slate-800 text-slate-200 rounded-tl-sm">
-                  <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700">
+                  <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7] prose-pre:p-0 prose-pre:m-0 prose-pre:bg-transparent">
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ children, ...props }) {
+                        pre({ children }) {
+                          const childrenArray = Children.toArray(children);
+                          const isQuiz = childrenArray.some((child) => {
+                            if (!isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
+                              return false;
+                            }
+                            return (
+                              child.props.className?.includes('language-quiz') ||
+                              String(child.props.children || '').includes('"quizzes"')
+                            );
+                          });
+                          if (isQuiz) {
+                            return <>{children}</>;
+                          }
                           return (
-                            <code className="bg-transparent px-0 py-0 rounded-none border-0 text-blue-400 font-sans font-bold" {...props}>
+                            <pre className="my-4 overflow-x-auto rounded-2xl bg-slate-950 border border-slate-700 p-4 font-mono text-xs text-slate-300">
+                              {children}
+                            </pre>
+                          );
+                        },
+                        hr() {
+                          return <hr className="border-slate-800/30 my-6" />;
+                        },
+                        code({ className, children, ...props }) {
+                          const match = /language-quiz/.exec(className || '');
+                          const isQuiz = match || className?.includes('language-quiz') || String(children).includes('"quizzes"');
+                          if (isQuiz) {
+                            return <ChatQuiz content={String(children)} isGenerating={isLoading} />;
+                          }
+                          return (
+                            <code className="bg-transparent px-0 py-0 rounded-none text-blue-400 font-sans font-bold text-[12px] sm:text-[13px] border-0" {...props}>
                               {children}
                             </code>
                           );
                         },
+                        blockquote({ children }) {
+                          return (
+                            <div className="my-5 p-5 bg-gradient-to-br from-indigo-950/30 to-blue-950/20 border-l-4 border-blue-500 rounded-r-3xl text-slate-300 italic shadow-[inset_0_1px_3px_rgba(59,130,246,0.05)] relative overflow-hidden">
+                              <span className="absolute -top-2 -left-1 text-6xl font-serif text-blue-500/10 select-none pointer-events-none">“</span>
+                              <div className="relative z-10 text-[13px] sm:text-[14px] leading-[1.7]">{children}</div>
+                            </div>
+                          );
+                        },
+                        h3({ children }) {
+                          return (
+                            <div className="mt-6 mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-950/40 to-slate-900/60 border border-blue-500/20 border-l-4 border-l-blue-500 text-white font-black text-xs sm:text-sm flex items-center gap-3 shadow-[0_4px_20px_rgba(59,130,246,0.05)] select-none">
+                              {children}
+                            </div>
+                          );
+                        },
+                        h4({ children }) {
+                          return <h4 className="text-xs font-black text-slate-300 mt-5 mb-2.5 uppercase tracking-wider">{children}</h4>;
+                        },
                         strong({ children }) {
-                          return <strong className="bg-transparent px-0 py-0 rounded-none border-0 text-blue-400 font-black">{children}</strong>;
+                          return (
+                            <strong className="text-blue-400 font-black bg-transparent px-0 py-0 rounded-none border-0 inline">
+                              {children}
+                            </strong>
+                          );
+                        },
+                        p({ children }) {
+                          return <p className="text-[13px] sm:text-[14px] leading-[1.7] text-slate-300 mb-4 whitespace-normal break-words">{children}</p>;
+                        },
+                        ul({ children }) {
+                          return <ul className="list-disc pl-5 space-y-2 mb-4 text-[13px] sm:text-[14px] text-slate-300 leading-[1.7]">{children}</ul>;
+                        },
+                        ol({ children }) {
+                          return <ol className="list-decimal pl-5 space-y-2 mb-4 text-[13px] sm:text-[14px] text-slate-300 leading-[1.7]">{children}</ol>;
+                        },
+                        li({ children }) {
+                          return <li className="leading-[1.7] hover:text-slate-200 transition-colors duration-150">{children}</li>;
+                        },
+                        table({ children }) {
+                          return (
+                            <div className="overflow-x-auto my-5 rounded-2xl border border-slate-700 bg-slate-950/40 backdrop-blur-sm shadow-xl max-w-full">
+                              <table className="w-full text-left border-collapse text-xs sm:text-sm text-slate-300">
+                                {children}
+                              </table>
+                            </div>
+                          );
+                        },
+                        thead({ children }) {
+                          return <thead className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-b border-slate-700 text-white select-none">{children}</thead>;
+                        },
+                        th({ children }) {
+                          return <th className="p-4 font-black border-r border-slate-700 last:border-r-0 tracking-wide uppercase text-[10px] text-slate-400">{children}</th>;
+                        },
+                        td({ children }) {
+                          const text = Array.isArray(children) 
+                            ? children.map(c => String(c)).join('').trim() 
+                            : String(children).trim();
+                          const pctMatch = /^(\d+(?:\.\d+)?)\s*%$/.exec(text);
+                          if (pctMatch) {
+                            const value = parseFloat(pctMatch[1]);
+                            return (
+                              <td className="p-4 border-r border-slate-700 last:border-r-0 border-b border-slate-700 last:border-b-0 font-extrabold text-blue-400">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-xs">{text}</span>
+                                  <div className="w-12 h-1.5 bg-slate-950 rounded-full overflow-hidden hidden xs:block">
+                                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${Math.min(100, value * 2)}%` }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td className="p-4 border-r border-slate-700 last:border-r-0 border-b border-slate-700 last:border-b-0 font-medium">
+                              {children}
+                            </td>
+                          );
+                        },
+                        tr({ children }) {
+                          return <tr className="hover:bg-blue-500/5 border-b border-slate-700 last:border-b-0 transition-colors duration-150">{children}</tr>;
+                        },
+                        a({ href, children }) {
+                          return <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-bold transition-colors">{children}</a>;
                         },
                       }}
                     >
@@ -259,7 +486,13 @@ export default function TaxAssistantChat() {
 
       {/* Floating Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            router.push('/dashboard/assistant');
+          } else {
+            setIsOpen(!isOpen);
+          }
+        }}
         className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)] flex items-center justify-center hover:scale-110 transition-transform focus:outline-none"
       >
         {isOpen ? (

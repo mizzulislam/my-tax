@@ -135,10 +135,7 @@ export default function KalkulatorPage() {
         </div>
 
         <aside className="order-1 space-y-4 xl:order-2">
-          <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-2xl shadow-black/20">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/45 via-indigo-500/10 to-slate-800/40 opacity-70" />
-            <div className="relative rounded-[23px] bg-slate-900/85 p-4 backdrop-blur-2xl xl:p-5">
-              <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-blue-400/50 via-slate-700/30 to-transparent xl:block" />
+          <div className="relative overflow-visible bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl md:rounded-3xl p-4 xl:p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Tax Matrix</p>
@@ -327,7 +324,6 @@ export default function KalkulatorPage() {
                   </button>
                 );
               })}
-            </div>
             </div>
           </div>
         </aside>

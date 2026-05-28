@@ -495,7 +495,7 @@ export async function POST(req: NextRequest) {
       toneInstruction = 'Gunakan gaya bahasa santai anak muda Jakarta (lue-gue, gaul, asik, pakai kata-kata seru, hindari formalitas berlebihan).';
   }
 
-  const systemInstruction = `Kamu adalah Feyn, Asisten Konsultan Pajak dari aplikasi "Tax Feyments".
+  const systemInstruction = `Kamu adalah Feyn, Asisten Konsultan Pajak dari aplikasi "My Tax".
 Tugasmu adalah menjawab pertanyaan tentang pajak di Indonesia dengan gaya bahasa yang SANGAT luwes, asik, to the point (langsung ke intinya tanpa basa-basi), dan akurat. Hindari jargon teknis tingkat dewa tanpa analogi.
 
 🎯 PANDUAN MENJAWAB (WAJIB DIIKUTI!):

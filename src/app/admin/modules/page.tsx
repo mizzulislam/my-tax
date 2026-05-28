@@ -5,6 +5,7 @@ import Link from 'next/link';
 import RoleGuard from '@/components/RoleGuard';
 import { useAdminModules, useDeleteAdminModule, useSaveAdminModule, useSeedAdminModules } from '@/hooks/admin/useAdminApi';
 import { CmsTaxModule, CmsTaxModuleInput } from '@/types/taxpayer';
+import { useAlert } from '@/contexts/AlertContext';
 
 const CMS_MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.tax_learning_modules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -169,6 +170,7 @@ function TextArea({
 }
 
 export default function AdminModulesPage() {
+  const { showConfirm } = useAlert();
   const { data, isLoading, error } = useAdminModules();
   const saveModule = useSaveAdminModule();
   const deleteModule = useDeleteAdminModule();
@@ -304,8 +306,8 @@ export default function AdminModulesPage() {
                         Edit
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`Hapus modul "${module.title}"?`)) deleteModule.mutate(module.id);
+                        onClick={async () => {
+                          if (await showConfirm('Hapus Modul', `Hapus modul "${module.title}"?`, 'Ya, Hapus', 'Batal')) deleteModule.mutate(module.id);
                         }}
                         disabled={deleteModule.isPending}
                         className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-300 disabled:opacity-50"

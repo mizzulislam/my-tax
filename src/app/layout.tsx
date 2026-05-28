@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { connection } from "next/server";
+
+import { AlertProvider } from '@/contexts/AlertContext';
 import "./globals.css";
 import Providers from "./providers";
 
@@ -15,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tax Feyments App",
+  title: "My Tax App",
   description: "Aplikasi perpajakan modern",
 };
 
@@ -30,10 +32,13 @@ export default async function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <Providers>
-          {children}
+          <AlertProvider>
+            {children}
+          </AlertProvider>
         </Providers>
       </body>
     </html>

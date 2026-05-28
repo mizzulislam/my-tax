@@ -17,7 +17,7 @@ export default function GlobalError({
     <html lang="id">
       <body className="min-h-screen bg-slate-950 text-slate-100">
         <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-blue-300">Tax Feyments</p>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-blue-300">My Tax</p>
           <h1 className="mt-4 text-3xl font-black text-white">Terjadi gangguan aplikasi</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
             Kami tidak menampilkan detail teknis di layar untuk menjaga keamanan data pajak Anda.

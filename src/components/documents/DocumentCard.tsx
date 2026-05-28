@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TaxDocument } from '@/types/taxpayer';
 import { useDeleteDocument, getDocumentUrl } from '@/hooks/useDocuments';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface DocumentCardProps {
   document: TaxDocument;
@@ -12,6 +13,7 @@ interface DocumentCardProps {
 export default function DocumentCard({ document, onPreview }: DocumentCardProps) {
   const { mutate: deleteDoc, isPending: isDeleting } = useDeleteDocument();
   const [isOpening, setIsOpening] = useState(false);
+  const { showAlert, showConfirm } = useAlert();
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -38,15 +40,15 @@ export default function DocumentCard({ document, onPreview }: DocumentCardProps)
       if (url) {
         onPreview(url, document.fileType, document.fileName);
       } else {
-        alert('Gagal mendapatkan akses dokumen.');
+        await showAlert('Gagal', 'Gagal mendapatkan akses dokumen.', 'error');
       }
     } finally {
       setIsOpening(false);
     }
   };
 
-  const handleDelete = () => {
-    if (confirm(`Apakah Anda yakin ingin menghapus dokumen "${document.fileName}"?`)) {
+  const handleDelete = async () => {
+    if (await showConfirm('Hapus Dokumen', `Apakah Anda yakin ingin menghapus dokumen "${document.fileName}"?`, 'Ya, Hapus', 'Batal')) {
       deleteDoc(document);
     }
   };

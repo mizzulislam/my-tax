@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { useAlert } from '@/contexts/AlertContext';
 
 const MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,6 +44,7 @@ CREATE POLICY "User own prefs UPDATE" ON public.notification_preferences FOR UPD
 `;
 
 export default function NotificationSettingsPage() {
+  const { showAlert } = useAlert();
   const [isTableMissing, setIsTableMissing] = useState(false);
   const [checkingTable, setCheckingTable] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,7 +114,7 @@ export default function NotificationSettingsPage() {
         if (typeof window !== 'undefined' && 'Notification' in window) {
           const permission = await Notification.requestPermission();
           if (permission !== 'granted') {
-            alert('Izin Push Notification ditolak oleh browser.');
+            await showAlert('Peringatan', 'Izin Push Notification ditolak oleh browser.', 'warning');
             setPrefs(p => ({ ...p, push_notifications: false }));
           }
         }
@@ -136,7 +138,7 @@ export default function NotificationSettingsPage() {
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal menyimpan preferensi notifikasi.';
-      alert(message);
+      await showAlert('Gagal', message, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -150,7 +152,7 @@ export default function NotificationSettingsPage() {
             Pengaturan <span className="text-yellow-500 font-extrabold">Notifikasi</span>
           </h1>
           <p className="text-slate-400 max-w-xl text-sm leading-relaxed font-medium">
-            Atur bagaimana sistem dan AI Taxologist berkomunikasi dengan Anda. Kendalikan notifikasi realtime, pengingat deadline, dan jam sibuk Anda.
+            Atur bagaimana sistem dan Tax Feyments berkomunikasi dengan Anda. Kendalikan notifikasi realtime, pengingat deadline, dan jam sibuk Anda.
           </p>
         </div>
         

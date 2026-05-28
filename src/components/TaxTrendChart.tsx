@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface Report {
@@ -17,45 +18,92 @@ interface TaxTrendChartProps {
 }
 
 export default function TaxTrendChart({ data }: TaxTrendChartProps) {
-  // 1. Agregasi data per tahun
-  const yearMap: Record<number, { gross: number; tax: number }> = {};
-  
-  // Mengisi default data agar chart tetap tampil cantik meskipun user baru memiliki 1-2 data
-  const defaultYears = [2024, 2025, 2026];
-  defaultYears.forEach(y => {
-    yearMap[y] = { gross: 0, tax: 0 };
-  });
+  const [viewMode, setViewMode] = useState<'yearly' | 'monthly'>('yearly');
 
-  data.forEach((r) => {
-    const yr = Number(r.tax_year);
-    if (!isNaN(yr)) {
-      if (!yearMap[yr]) {
-        yearMap[yr] = { gross: 0, tax: 0 };
+  let chartData: Array<{ label: string; gross: number; tax: number }> = [];
+
+  if (viewMode === 'yearly') {
+    // 1. Agregasi data per tahun
+    const yearMap: Record<number, { gross: number; tax: number }> = {};
+    
+    // Mengisi default data agar chart tetap tampil cantik meskipun user baru memiliki 1-2 data
+    const defaultYears = [2024, 2025, 2026];
+    defaultYears.forEach(y => {
+      yearMap[y] = { gross: 0, tax: 0 };
+    });
+
+    data.forEach((r) => {
+      const yr = Number(r.tax_year);
+      if (!isNaN(yr)) {
+        if (!yearMap[yr]) {
+          yearMap[yr] = { gross: 0, tax: 0 };
+        }
+        yearMap[yr].gross += r.gross_income;
+        yearMap[yr].tax += r.tax_payable;
       }
-      yearMap[yr].gross += r.gross_income;
-      yearMap[yr].tax += r.tax_payable;
+    });
+
+    // Urutkan tahun secara kronologis
+    const sortedYears = Object.keys(yearMap)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    chartData = sortedYears.map((yr) => ({
+      label: String(yr),
+      gross: yearMap[yr].gross,
+      tax: yearMap[yr].tax,
+    }));
+  } else {
+    // 2. Agregasi data per bulan
+    const monthMap: Record<string, { gross: number; tax: number }> = {};
+    
+    if (data.length === 0) {
+      const defaultMonths = ['2026-01', '2026-02', '2026-03'];
+      defaultMonths.forEach(m => { monthMap[m] = { gross: 0, tax: 0 }; });
     }
-  });
 
-  // Urutkan tahun secara kronologis
-  const sortedYears = Object.keys(yearMap)
-    .map(Number)
-    .sort((a, b) => a - b);
+    data.forEach((r) => {
+      const yr = Number(r.tax_year);
+      const mo = r.tax_period;
+      if (!isNaN(yr) && mo) {
+        const key = `${yr}-${mo.padStart(2, '0')}`;
+        if (!monthMap[key]) {
+          monthMap[key] = { gross: 0, tax: 0 };
+        }
+        monthMap[key].gross += r.gross_income;
+        monthMap[key].tax += r.tax_payable;
+      }
+    });
 
-  const chartData = sortedYears.map((yr) => ({
-    year: String(yr),
-    gross: yearMap[yr].gross,
-    tax: yearMap[yr].tax,
-  }));
+    const sortedMonths = Object.keys(monthMap).sort((a, b) => a.localeCompare(b));
+    chartData = sortedMonths.map((key) => {
+       const [yr, mo] = key.split('-');
+       const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+       const monthLabel = monthNames[parseInt(mo, 10) - 1] || mo;
+       return {
+         label: `${monthLabel} ${yr}`,
+         gross: monthMap[key].gross,
+         tax: monthMap[key].tax,
+       };
+    });
+  }
 
   // Jika semua data bernilai 0, kita berikan data visual simulasi sebagai panduan tren awal
   const isAllZero = chartData.every(d => d.gross === 0 && d.tax === 0);
   const displayData = isAllZero 
-    ? [
-        { year: '2024', gross: 120000000, tax: 6000000 },
-        { year: '2025', gross: 180000000, tax: 12000000 },
-        { year: '2026', gross: 240000000, tax: 21000000 }
-      ]
+    ? (viewMode === 'yearly'
+      ? [
+          { label: '2024', gross: 120000000, tax: 6000000 },
+          { label: '2025', gross: 180000000, tax: 12000000 },
+          { label: '2026', gross: 240000000, tax: 21000000 }
+        ]
+      : [
+          { label: 'Jan 2026', gross: 10000000, tax: 500000 },
+          { label: 'Feb 2026', gross: 12000000, tax: 600000 },
+          { label: 'Mar 2026', gross: 15000000, tax: 750000 },
+          { label: 'Apr 2026', gross: 15000000, tax: 750000 },
+          { label: 'Mei 2026', gross: 20000000, tax: 1000000 }
+        ])
     : chartData;
 
   const formatCurrency = (val: number) => {
@@ -82,15 +130,33 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
             </p>
           </div>
 
-          {/* Legenda Grafik */}
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-[11px] md:text-xs font-semibold">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
-              <span className="text-slate-300">Pendapatan Bruto</span>
+          {/* Toggle and Legend */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center bg-slate-950/50 rounded-lg p-1 border border-slate-800/50 self-start sm:self-auto">
+              <button
+                onClick={() => setViewMode('yearly')}
+                className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'yearly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+              >
+                Tahunan
+              </button>
+              <button
+                onClick={() => setViewMode('monthly')}
+                className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'monthly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+              >
+                Bulanan
+              </button>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
-              <span className="text-slate-300">PPh Terutang</span>
+
+            {/* Legenda Grafik */}
+            <div className="flex flex-wrap items-center gap-3 md:gap-4 text-[11px] md:text-xs font-semibold">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
+                <span className="text-slate-300">Pendapatan Bruto</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                <span className="text-slate-300">PPh Terutang</span>
+              </div>
             </div>
           </div>
         </div>
@@ -111,7 +177,7 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" strokeOpacity={0.4} vertical={false} />
               <XAxis 
-                dataKey="year" 
+                dataKey="label" 
                 stroke="#64748b" 
                 fontSize={10} 
                 fontWeight="bold" 
@@ -135,8 +201,8 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
                     return (
                       <div className="bg-slate-950/95 backdrop-blur-md border border-slate-800 p-4.5 rounded-2xl shadow-xl space-y-2.5 w-60 pointer-events-none">
                         <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Tahun Laporan</span>
-                          <span className="text-xs font-black text-white font-mono">{data.year}</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{viewMode === 'yearly' ? 'Tahun Laporan' : 'Bulan Laporan'}</span>
+                          <span className="text-xs font-black text-white font-mono">{data.label}</span>
                         </div>
                         <div className="space-y-1.5 text-xs font-semibold">
                           <div className="flex justify-between items-center">

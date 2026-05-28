@@ -288,29 +288,96 @@ export default function TaxCalendar() {
 
       {/* Kolom Pengingat */}
       <div className="lg:col-span-1 space-y-4 md:space-y-6">
-        <h3 className="text-lg md:text-xl font-bold text-white tracking-tight px-1">Pengingat Penting Bulan Ini</h3>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <h3 className="text-lg md:text-xl font-bold text-white tracking-tight">Pengingat Penting Bulan Ini</h3>
+        </div>
+        
+        <div className="relative group w-full">
+          <button
+          onClick={() => {
+            const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//My Tax App//ID
+BEGIN:VEVENT
+SUMMARY:Penyetoran PPh Masa (Tgl 15)
+DTSTART;VALUE=DATE:${year}0115
+RRULE:FREQ=MONTHLY;BYMONTHDAY=15
+DESCRIPTION:Batas akhir pembayaran/penyetoran PPh Masa (PPh Pasal 21, 23, 25, dll) yang dipotong/dipungut.
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Pelaporan SPT Masa (Tgl 20)
+DTSTART;VALUE=DATE:${year}0120
+RRULE:FREQ=MONTHLY;BYMONTHDAY=20
+DESCRIPTION:Batas akhir pelaporan SPT Masa (PPh Pasal 21, 23, dll) untuk masa pajak bulan sebelumnya.
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Pelaporan PPN & PPnBM (Akhir Bulan)
+DTSTART;VALUE=DATE:${year}0131
+RRULE:FREQ=MONTHLY;BYMONTHDAY=-1
+DESCRIPTION:Batas akhir pelaporan dan penyetoran PPN/PPnBM yang dipungut oleh Pengusaha Kena Pajak (PKP).
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:SPT Tahunan Orang Pribadi
+DTSTART;VALUE=DATE:${year}0331
+RRULE:FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=31
+DESCRIPTION:Batas akhir pelaporan Surat Pemberitahuan (SPT) Tahunan Pajak Penghasilan Wajib Pajak Orang Pribadi.
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:SPT Tahunan Wajib Pajak Badan
+DTSTART;VALUE=DATE:${year}0430
+RRULE:FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=30
+DESCRIPTION:Batas akhir pelaporan Surat Pemberitahuan (SPT) Tahunan Pajak Penghasilan Wajib Pajak Badan.
+END:VEVENT
+END:VCALENDAR`;
+
+            const blob = new Blob([icsContent.replace(/\\n/g, '\\r\\n')], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'kalender-pajak-rutin.ics');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-black text-[11px] md:text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 border border-blue-400/20"
+        >
+          <svg className="w-4 h-4 md:w-5 md:h-5 text-blue-200" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5z"/>
+          </svg>
+          Sinkronkan Semua Pengingat
+          </button>
+          
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[260px] p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-300 z-50 shadow-2xl leading-relaxed text-center">
+            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-t border-l border-slate-700 rotate-45"></div>
+            <p className="relative z-10 text-slate-300">
+              <strong className="text-white block mb-1">Cara Menggunakan:</strong> 
+              Klik untuk mengunduh. Buka file <span className="text-blue-400 font-mono font-bold bg-slate-900/50 px-1 py-0.5 rounded">.ics</span> yang terunduh di HP/PC Anda untuk menyimpan seluruh pengingat otomatis ke Kalender perangkat.
+            </p>
+          </div>
+        </div>
+
         <div className="rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 md:p-4 text-[11px] md:text-xs leading-5 text-amber-100/80">
           Periksa tanggal weekend, libur nasional, dan cuti bersama sebelum datang ke KPP. Kanal elektronik mungkin tetap tersedia, tetapi layanan tatap muka umumnya mengikuti hari kerja.
         </div>
         
         {deadlines.map((dl, idx) => (
-          <div 
-            key={idx} 
-            className={`group relative overflow-hidden rounded-2xl md:rounded-3xl bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-4 md:p-6 transition-all hover:bg-slate-800/50 hover:border-slate-700 hover:shadow-2xl`}
-          >
-            <div className={`absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${dl.color} ${dl.bgGlow}`}>
-                  Tanggal {dl.day}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">Batas Akhir</span>
+            <div 
+              key={idx} 
+              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-4 md:p-6 transition-all hover:bg-slate-800/50 hover:border-slate-700 hover:shadow-2xl flex flex-col justify-between`}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${dl.color} ${dl.bgGlow}`}>
+                    Tanggal {dl.day}
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium">Batas Akhir</span>
+                </div>
+                <h4 className="font-bold text-white text-sm md:text-md tracking-tight group-hover:text-blue-400 transition-colors">{dl.title}</h4>
+                <p className="text-xs md:text-sm text-slate-400 mt-1.5 md:mt-2 leading-relaxed">{dl.desc}</p>
               </div>
-              <h4 className="font-bold text-white text-sm md:text-md tracking-tight group-hover:text-blue-400 transition-colors">{dl.title}</h4>
-              <p className="text-xs md:text-sm text-slate-400 mt-1.5 md:mt-2 leading-relaxed">{dl.desc}</p>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
     </div>
