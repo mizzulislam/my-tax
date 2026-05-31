@@ -1,22 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useDemoStore } from '@/store/useDemoStore';
 
 export default function DemoCompletionModal({ isOpen }: { isOpen: boolean }) {
   const router = useRouter();
   const clearDemoMode = useDemoStore((state) => state.clearDemoMode);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+  if (!isOpen || !mounted) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-gradient-to-br from-indigo-950/90 to-slate-900/95 border border-blue-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Gradient Stroke Top */}
+        <div className="absolute top-0 inset-x-0 h-[4px] bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-400"></div>
+        
         {/* Glow effects */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
         
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="relative z-10 flex flex-col items-center text-center mt-2">
+          <div className="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
           </div>
           
@@ -34,7 +44,7 @@ export default function DemoCompletionModal({ isOpen }: { isOpen: boolean }) {
                 clearDemoMode();
                 router.push('/login');
               }}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 active:scale-95"
             >
               Daftar Akun Sekarang
             </button>
@@ -44,7 +54,7 @@ export default function DemoCompletionModal({ isOpen }: { isOpen: boolean }) {
                 clearDemoMode();
                 router.refresh();
               }}
-              className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all"
+              className="w-full py-3.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-bold rounded-xl transition-all"
             >
               Tutup & Keluar Simulasi
             </button>
@@ -53,4 +63,6 @@ export default function DemoCompletionModal({ isOpen }: { isOpen: boolean }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

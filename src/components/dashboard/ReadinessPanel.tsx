@@ -172,7 +172,7 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
             const isComplete = readiness.missingItems.length === 0;
             return (
               <>
-                <div className={`p-5 rounded-2xl bg-slate-950/40 border transition-colors ${isComplete ? 'border-emerald-500/20 hover:border-emerald-500/30' : 'border-slate-800 hover:border-slate-700'}`}>
+                <div className={`tour-target-status-kelengkapan p-5 rounded-2xl bg-slate-950/40 border transition-colors ${isComplete ? 'border-emerald-500/20 hover:border-emerald-500/30' : 'border-slate-800 hover:border-slate-700'}`}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${isComplete ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                       {isComplete ? (
@@ -200,7 +200,7 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
                   </ul>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors flex flex-col justify-between">
+                <div className="tour-target-langkah-selanjutnya p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">

@@ -11,6 +11,7 @@ import { useAiTaxContext } from '@/hooks/useAiTaxContext';
 import { supabase } from '@/lib/supabase';
 import { useAlert } from '@/contexts/AlertContext';
 import AIResponseWrapper from '@/components/AIResponseWrapper';
+import { useSelectionStore } from '@/store/useSelectionStore';
 
 
 
@@ -547,6 +548,7 @@ export default function AssistantPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [isTableMissing, setIsTableMissing] = useState(false);
+  const { pendingPrompt, setPendingPrompt } = useSelectionStore();
 
   // States for Persona and Tone customization
   const [persona, setPersona] = useState('umum');
@@ -617,6 +619,16 @@ export default function AssistantPage() {
   useEffect(() => {
     scrollToBottom();
   }, [dbMessages, tempMessage, isLoading]);
+
+  useEffect(() => {
+    if (pendingPrompt && !isLoading) {
+      // Small delay to ensure sessions are loaded and UI is stable
+      setTimeout(() => {
+        sendMessage(pendingPrompt);
+        setPendingPrompt(null);
+      }, 300);
+    }
+  }, [pendingPrompt, activeSessionId, isLoading]);
 
   // Handler Simpan Kustomisasi Persona dan Tone
   const handleSaveSettings = (selectedP: string, selectedT: string) => {
@@ -965,7 +977,7 @@ export default function AssistantPage() {
         </header>
 
         {/* List Pesan Chat */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-950/20">
+        <div className="tour-target-assistant-chat flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-950/20">
           
           {isTableMissing && (
             <ChatMigrationNotice />

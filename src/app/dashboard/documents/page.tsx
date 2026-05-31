@@ -75,7 +75,7 @@ export default function DocumentsPage() {
       ) : (
         <div className="flex flex-col gap-10 w-full">
           
-          <div className="w-full">
+          <div className="tour-target-document-upload w-full relative z-10">
             <DocumentUploader />
           </div>
 

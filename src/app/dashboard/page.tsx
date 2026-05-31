@@ -84,7 +84,7 @@ function DashboardContent() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="tour-target-dashboard-tabs flex items-center gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
           { id: 'overview', label: 'Ringkasan' },
           { id: 'analytics', label: 'Analitik' },
@@ -110,8 +110,12 @@ function DashboardContent() {
         {activeTab === 'overview' && (
           <div className="space-y-6 md:space-y-8">
             <ReadinessPanel reports={reportsData} />
-            <DashboardStats data={reportsData} />
-            <TaxTrendChart data={reportsData} />
+            <div className="tour-target-dashboard-stats">
+              <DashboardStats data={reportsData} />
+            </div>
+            <div className="tour-target-trend-chart">
+              <TaxTrendChart data={reportsData} />
+            </div>
             <TaxHistoryTable 
               data={incomeData.slice(0, 3)} 
               variant="compact" 

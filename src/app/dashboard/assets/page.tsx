@@ -53,7 +53,7 @@ export default function AssetsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-10 w-full">
-          <div className="w-full">
+          <div className="tour-target-asset-form w-full relative z-10">
             <AssetForm
               editAsset={editAsset}
               activeTaxYear={taxYear}

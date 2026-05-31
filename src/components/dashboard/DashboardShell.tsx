@@ -13,6 +13,8 @@ import TourGuide from '@/components/TourGuide';
 import { useGamification } from '@/hooks/useGamification';
 import { useDemoStore } from '@/store/useDemoStore';
 import { decrypt } from '@/lib/encryption';
+import SelectionAiHelper from '@/components/SelectionAiHelper';
+import { useSelectionStore } from '@/store/useSelectionStore';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,6 +45,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
   const storeProfile = useTaxpayerStore((state) => state.profile);
   const { data: gamification } = useGamification();
   const { isDemoMode, persona } = useDemoStore();
+  const { isSelectionModeActive, toggleSelectionMode } = useSelectionStore();
   
   const displayUserName = storeProfile?.fullName || userName;
   const displayUserHandle = storeProfile?.username || userHandle;
@@ -302,7 +305,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
       {/* SIDEBAR PANEL */}
       <aside
-        className={`fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform,padding,box-shadow] transition-[width,transform,padding,box-shadow] ${sidebarPanelMotionClass} lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0 max-lg:shadow-2xl max-lg:shadow-slate-950/60' : '-translate-x-full'} ${effectiveCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
+        className={`tour-target-sidebar fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform,padding,box-shadow] transition-[width,transform,padding,box-shadow] ${sidebarPanelMotionClass} lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0 max-lg:shadow-2xl max-lg:shadow-slate-950/60' : '-translate-x-full'} ${effectiveCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           {/* Logo & Brand */}
@@ -489,6 +492,15 @@ export default function DashboardShell({ children, userEmail, userName, userHand
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSelectionMode}
+              className={`tour-target-ai-highlight relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all ${isSelectionModeActive ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 shadow-lg'}`}
+              title="Mode AI Sorot Teks"
+            >
+              <svg className={`w-4 h-4 ${isSelectionModeActive ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            </button>
             <StreakCounter />
             <NotificationCenter />
 
@@ -609,6 +621,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
       <TaxAssistantChat />
       <TourGuide />
+      <SelectionAiHelper />
     </div>
   );
 }

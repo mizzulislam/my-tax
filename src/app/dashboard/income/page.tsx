@@ -54,7 +54,7 @@ export default function IncomePage() {
         </div>
       ) : (
         <div className="flex flex-col gap-10 w-full">
-          <div className="w-full">
+          <div className="tour-target-income-form w-full relative z-10">
             <IncomeSourceForm
               editSource={editSource}
               activeTaxYear={taxYear}
@@ -87,13 +87,15 @@ export default function IncomePage() {
               </div>
             </div>
 
-            <IncomeSourceTable
-              taxYear={taxYear}
-              onEdit={(source) => {
-                setEditSource(source);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+            <div className="tour-target-income-list">
+              <IncomeSourceTable
+                taxYear={taxYear}
+                onEdit={(source) => {
+                  setEditSource(source);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </div>
             
             <IncomeSimulationPanel taxYear={taxYear} />
           </div>

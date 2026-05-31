@@ -131,7 +131,7 @@ export default function KalkulatorPage() {
       </div>
 
       <div className="mt-4 grid w-full items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="order-2 xl:order-1">
+        <div className="tour-target-calculator-form order-2 xl:order-1">
           <DisclaimerBox />
           <TaxCalculatorForm calculatorType={calculatorType} />
         </div>
