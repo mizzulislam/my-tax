@@ -139,7 +139,21 @@ export default function TaxAssistantChat() {
       setTempMessage('');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Gagal memproses jawaban AI.';
-      await showAlert('Gagal', `Error: ${message}`, 'error');
+      
+      // Terapkan Fallback AI Response jika API gagal/quota habis
+      if (activeSessionId) {
+        await createMessage.mutateAsync({
+          session_id: activeSessionId,
+          role: 'ai',
+          content: "Mohon maaf, layanan AI saat ini sedang tidak tersedia karena limit kuota atau gangguan jaringan. Silakan gunakan kalkulator pajak dan fitur Readiness Score secara manual di dashboard sementara waktu.",
+          metadata: {
+            isHighRisk: false,
+            model: 'fallback-rule-based'
+          }
+        });
+      }
+      
+      await showAlert('Pemberitahuan', 'Layanan AI utama sedang sibuk. Menampilkan respons fallback.', 'warning');
     } finally {
       setIsLoading(false);
     }

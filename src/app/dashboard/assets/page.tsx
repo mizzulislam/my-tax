@@ -1,39 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AssetForm from '@/components/AssetForm';
 import AssetTable from '@/components/AssetTable';
 import { Asset } from '@/types/taxpayer';
 
-
-
 export default function AssetsPage() {
+  const router = useRouter();
   const [taxYear, setTaxYear] = useState<number>(new Date().getFullYear());
   const [editAsset, setEditAsset] = useState<Asset | undefined>(undefined);
-  const [isTableMissing, setIsTableMissing] = useState(false);
-  const [checkingTable, setCheckingTable] = useState(true);
-
-  const checkTableExistence = async () => {
-    try {
-      setCheckingTable(true);
-      const { error } = await supabase
-        .from('assets')
-        .select('id')
-        .limit(1);
-
-      setCheckingTable(true);
-      setIsTableMissing(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCheckingTable(false);
-    }
-  };
 
   useEffect(() => {
-    checkTableExistence();
-  }, []);
+    router.prefetch('/dashboard/documents');
+  }, [router]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -46,56 +26,49 @@ export default function AssetsPage() {
         </p>
       </div>
 
-      {checkingTable ? (
-        <div className="py-20 text-center text-slate-500 font-medium">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-          <p className="text-sm">Menghubungkan ke database perpajakan...</p>
+      <div className="flex flex-col gap-10 w-full">
+        <div className="tour-target-asset-form w-full relative z-10">
+          <AssetForm
+            editAsset={editAsset}
+            activeTaxYear={taxYear}
+            onSuccess={() => {
+              setEditAsset(undefined);
+            }}
+            onCancel={editAsset ? () => setEditAsset(undefined) : undefined}
+          />
         </div>
-      ) : (
-        <div className="flex flex-col gap-10 w-full">
-          <div className="tour-target-asset-form w-full relative z-10">
-            <AssetForm
-              editAsset={editAsset}
-              activeTaxYear={taxYear}
-              onSuccess={() => {
-                setEditAsset(undefined);
-              }}
-              onCancel={editAsset ? () => setEditAsset(undefined) : undefined}
-            />
-          </div>
 
-          <div className="w-full space-y-6">
-            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Pilih Tahun Pajak
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setTaxYear(taxYear - 1)}
-                  className="p-2 bg-slate-950/50 border border-slate-800 text-white hover:text-blue-400 rounded-lg transition-colors text-xs font-bold"
-                >
-                  &larr;
-                </button>
-                <span className="text-sm font-black text-white px-3 font-mono">{taxYear}</span>
-                <button
-                  onClick={() => setTaxYear(taxYear + 1)}
-                  className="p-2 bg-slate-950/50 border border-slate-800 text-white hover:text-blue-400 rounded-lg transition-colors text-xs font-bold"
-                >
-                  &rarr;
-                </button>
-              </div>
+        <div className="w-full space-y-6">
+          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Pilih Tahun Pajak
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTaxYear(taxYear - 1)}
+                className="p-2 bg-slate-950/50 border border-slate-800 text-white hover:text-blue-400 rounded-lg transition-colors text-xs font-bold"
+              >
+                &larr;
+              </button>
+              <span className="text-sm font-black text-white px-3 font-mono">{taxYear}</span>
+              <button
+                onClick={() => setTaxYear(taxYear + 1)}
+                className="p-2 bg-slate-950/50 border border-slate-800 text-white hover:text-blue-400 rounded-lg transition-colors text-xs font-bold"
+              >
+                &rarr;
+              </button>
             </div>
-
-            <AssetTable
-              taxYear={taxYear}
-              onEdit={(asset) => {
-                setEditAsset(asset);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
           </div>
+
+          <AssetTable
+            taxYear={taxYear}
+            onEdit={(asset) => {
+              setEditAsset(asset);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 }

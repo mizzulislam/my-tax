@@ -30,13 +30,14 @@ export function useFetchDocuments(category?: string, taxYear?: number) {
         return docs as TaxDocument[];
       }
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return [];
 
       let query = supabase
         .from('documents')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id,user_id,file_name,file_path,file_size,file_type,category,tax_year,description,is_verified,created_at')
+        .eq('user_id', userId);
 
       if (category) query = query.eq('category', category);
       if (taxYear) query = query.eq('tax_year', taxYear);
@@ -104,13 +105,14 @@ export function useUploadDocument() {
         return { id: 'demo-doc', ...doc };
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Sesi aktif tidak ditemukan.');
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error('Sesi aktif tidak ditemukan.');
 
       // 1. Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const uniqueFileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `${user.id}/${category}/${uniqueFileName}`;
+      const filePath = `${userId}/${category}/${uniqueFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('tax-documents')
@@ -140,7 +142,7 @@ export function useUploadDocument() {
       const newFileName = `${prefix}_${cleanOriginalName}`;
 
       const payload = {
-        user_id: user.id,
+        user_id: userId,
         file_name: newFileName,
         file_path: filePath,
         file_size: file.size,

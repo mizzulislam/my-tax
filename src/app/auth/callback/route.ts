@@ -5,12 +5,15 @@ import { cookies } from 'next/headers';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard';
   
   const forwardedHost = request.headers.get('x-forwarded-host');
-  const proto = request.headers.get('x-forwarded-proto') || 'http';
-  const origin = forwardedHost ? `${proto}://${forwardedHost}` : requestUrl.origin;
-
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const isLocalRequest = ['localhost', '127.0.0.1', '::1'].includes(requestUrl.hostname);
+  const configuredOrigin = !isLocalRequest && process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+    : null;
+  const origin = configuredOrigin || (forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin);
+  const dashboardUrl = new URL('/dashboard', origin);
 
   if (code) {
     const cookieStore = await cookies();
@@ -39,10 +42,10 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(dashboardUrl, { status: 303 });
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate user`);
+  return NextResponse.redirect(new URL('/login?error=Could%20not%20authenticate%20user', origin), { status: 303 });
 }

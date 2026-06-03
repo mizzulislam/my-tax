@@ -101,7 +101,7 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
   const strokeDashoffset = mounted ? circleCircumference - (circleCircumference * Math.min(100, Math.max(0, readiness.score))) / 100 : circleCircumference;
 
   const actionText = readiness.nextActions.length > 0 ? readiness.nextActions[0] : '';
-  let nextActionLink = readiness.nextAction.href;
+  const nextActionLink = readiness.nextAction.href;
 
   return (
     <section className="tour-target-readiness relative w-full rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 shadow-xl overflow-hidden">
@@ -245,7 +245,7 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
             </div>
             
             <p className="text-sm text-slate-300 leading-relaxed italic ml-1">
-              "{insightMessage}"
+              &quot;{insightMessage}&quot;
             </p>
           </div>
 

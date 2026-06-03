@@ -7,6 +7,8 @@ import { useMutateAsset } from '@/hooks/useAssets';
 import { useEffect } from 'react';
 import Tooltip from './Tooltip';
 import { ModernSelect } from '@/components/ui/ModernSelect';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { calculateFiscalDepreciation } from '@/lib/taxEngine';
 
 const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
@@ -130,18 +132,15 @@ export default function AssetForm({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-              Nama Aset / Harta
+            <div className="flex items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Aset / Harta</span>
               <Tooltip content="Sebutkan nama harta secara spesifik. Contoh: Mobil Honda HRV 2022, Saham PT BBRI, Emas Antam 50gr, Rumah Tinggal Pondok Indah." />
-            </label>
-            <input
-              {...register('assetName')}
+            </div>
+            <Input
               placeholder="Contoh: Rumah Tinggal, Deposito BRI, dsb."
-              className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
+              {...register('assetName')}
+              error={errors.assetName?.message}
             />
-            {errors.assetName && (
-              <p className="text-xs text-red-400 font-medium">{errors.assetName.message}</p>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -177,90 +176,78 @@ export default function AssetForm({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                Tahun Pajak SPT
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tahun Pajak SPT</span>
                 <Tooltip content="Harta akan dilaporkan dalam daftar aset SPT Tahunan pada tahun bersangkutan." />
-              </label>
-              <input
+              </div>
+              <Input
                 type="number"
                 {...register('taxYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                className="font-mono"
+                error={errors.taxYear?.message}
               />
-              {errors.taxYear && (
-                <p className="text-xs text-red-400 font-medium">{errors.taxYear.message}</p>
-              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                Tahun Perolehan
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tahun Perolehan</span>
                 <Tooltip content="Tahun ketika Anda membeli/mendapatkan kepemilikan harta tersebut." />
-              </label>
-              <input
+              </div>
+              <Input
                 type="number"
                 {...register('acquisitionYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                className="font-mono"
+                error={errors.acquisitionYear?.message}
               />
-              {errors.acquisitionYear && (
-                <p className="text-xs text-red-400 font-medium">{errors.acquisitionYear.message}</p>
-              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                Nilai Perolehan
+              <div className="flex items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Perolehan</span>
                 <Tooltip content="Harga beli aset saat pertama kali diperoleh dalam Rupiah." />
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                <Controller
-                  name="acquisitionValue"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberInput(field.value)}
-                      onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
-                      placeholder="0"
-                      className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                    />
-                  )}
-                />
               </div>
-              {errors.acquisitionValue && (
-                <p className="text-xs text-red-400 font-medium">{errors.acquisitionValue.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-              Estimasi Nilai Wajar Saat Ini (Opsional)
-              <Tooltip content="Nilai pasar atau estimasi harga wajar aset pada tahun pajak berjalan (untuk analisis kekayaan pribadi)." />
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
               <Controller
-                name="currentValue"
+                name="acquisitionValue"
                 control={control}
                 render={({ field }) => (
-                  <input
+                  <Input
                     type="text"
                     inputMode="numeric"
-                    value={formatNumberInput(field.value || 0)}
+                    value={formatNumberInput(field.value)}
                     onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
                     placeholder="0"
-                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                    leftIcon={<span className="text-xs font-semibold text-slate-500">Rp</span>}
+                    className="font-mono"
+                    error={errors.acquisitionValue?.message}
                   />
                 )}
               />
             </div>
-            {errors.currentValue && (
-              <p className="text-xs text-red-400 font-medium">{errors.currentValue.message}</p>
-            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimasi Nilai Wajar Saat Ini (Opsional)</span>
+              <Tooltip content="Nilai pasar atau estimasi harga wajar aset pada tahun pajak berjalan (untuk analisis kekayaan pribadi)." />
+            </div>
+            <Controller
+              name="currentValue"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberInput(field.value || 0)}
+                  onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
+                  placeholder="0"
+                  leftIcon={<span className="text-xs font-semibold text-slate-500">Rp</span>}
+                  className="font-mono"
+                  error={errors.currentValue?.message}
+                />
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -281,22 +268,23 @@ export default function AssetForm({
 
           <div className="flex gap-3 pt-2">
             {onCancel && (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={onCancel}
-                className="w-1/3 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-750 text-slate-300 font-bold rounded-xl transition-all text-xs uppercase tracking-wider"
+                type="button"
+                className="w-1/3"
               >
                 Batal
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="primary"
               type="submit"
-              disabled={isPending}
-              className="relative flex-1 overflow-hidden rounded-xl bg-blue-600 py-3 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:opacity-50 outline-none group/btn text-xs uppercase tracking-wider"
+              isLoading={isPending}
+              className="flex-1"
             >
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
               {isPending ? 'Menyimpan...' : editAsset ? 'Simpan Perubahan' : 'Catat Aset'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

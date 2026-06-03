@@ -148,7 +148,7 @@ export async function DELETE(req: NextRequest) {
 
   if (existingReport.user_id !== user.id) {
     console.error(`User ID mismatch: report.user_id = ${existingReport.user_id}, session.user.id = ${user.id}`);
-    // We will still delete it for debugging, but in production we should block
+    return NextResponse.json({ error: 'Akses ditolak. Anda tidak berhak menghapus laporan ini.' }, { status: 403 });
   }
 
   const { error, count } = await adminClient

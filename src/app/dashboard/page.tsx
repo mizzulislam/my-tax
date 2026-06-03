@@ -19,6 +19,13 @@ import { IncomeSource } from '@/types/taxpayer';
 
 type TabType = 'overview' | 'analytics' | 'history' | 'calendar';
 
+const dashboardTabs: { id: TabType; label: string }[] = [
+  { id: 'overview', label: 'Ringkasan' },
+  { id: 'analytics', label: 'Analitik' },
+  { id: 'history', label: 'Riwayat Penghasilan' },
+  { id: 'calendar', label: 'Kalender Pajak' },
+];
+
 function DashboardContent() {
   const { data: reports, isLoading, isError, error } = useFetchReports();
   const { data: incomeSources } = useFetchIncomeSources();
@@ -84,25 +91,49 @@ function DashboardContent() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="tour-target-dashboard-tabs flex items-center gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[
-          { id: 'overview', label: 'Ringkasan' },
-          { id: 'analytics', label: 'Analitik' },
-          { id: 'history', label: 'Riwayat Penghasilan' },
-          { id: 'calendar', label: 'Kalender Pajak' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as TabType)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="tour-target-dashboard-tabs relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/45 p-1.5 shadow-2xl shadow-blue-950/20 backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(59,130,246,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_35%,rgba(14,165,233,0.06))]" />
+        <div
+          aria-label="Navigasi dashboard"
+          className="relative flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-4"
+          role="tablist"
+        >
+          {dashboardTabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                role="tab"
+                type="button"
+                className={`group relative min-h-11 shrink-0 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold whitespace-nowrap outline-none transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:min-w-0 sm:whitespace-normal ${
+                  isActive
+                    ? 'text-white shadow-lg shadow-cyan-500/15'
+                    : 'text-slate-400 hover:-translate-y-0.5 hover:text-slate-100'
+                }`}
+              >
+                <span
+                  className={`absolute inset-0 rounded-xl transition-all duration-300 ease-out ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-400/95 via-blue-500/95 to-indigo-500/95 opacity-100'
+                      : 'bg-white/[0.04] opacity-0 group-hover:opacity-100'
+                  }`}
+                />
+                <span
+                  className={`absolute inset-x-4 bottom-0 h-px rounded-full bg-cyan-200 transition-all duration-300 ${
+                    isActive ? 'opacity-70 shadow-[0_0_18px_rgba(125,211,252,0.8)]' : 'opacity-0 group-hover:opacity-40'
+                  }`}
+                />
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${isActive ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.85)]' : 'bg-slate-600 group-hover:bg-cyan-300/80'}`} />
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Tab Content Area */}
@@ -158,4 +189,3 @@ export default function DashboardPage() {
     </Suspense>
   );
 }
-

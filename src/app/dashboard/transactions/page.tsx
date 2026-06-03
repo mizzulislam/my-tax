@@ -234,7 +234,7 @@ export default function TransactionsPage() {
           Transaksi <span className="text-blue-500">Digital</span>
         </h1>
         <p className="text-slate-400 max-w-2xl text-md leading-relaxed">
-          FR-04, FR-08 & FR-07: Kelola pencatatan keuangan digital Anda secara semi-otomatis dengan klasifikasi PPh dan ekstraksi nota berbasis AI OCR.
+          Kelola pencatatan keuangan digital Anda secara semi-otomatis dengan klasifikasi PPh dan ekstraksi nota berbasis AI OCR.
         </p>
       </div>
 

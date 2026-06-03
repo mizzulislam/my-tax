@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import TaxCalculatorForm, { calculatorOptions, type CalculatorType } from '@/components/TaxCalculatorForm';
+import TaxCalculatorForm from '@/components/TaxCalculatorForm';
+import { calculatorOptions, type CalculatorType } from '@/components/tax/TaxCalculatorShared';
 import { DisclaimerBox } from '@/components/DisclaimerBox';
 
 type TaxScopeFilter = 'all' | 'central' | 'regional' | 'sanction';

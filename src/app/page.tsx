@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDemoStore } from '@/store/useDemoStore';
+import { supabase } from '@/lib/supabase';
 
 const IconBarChart = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -72,6 +73,38 @@ export default function Home() {
   const { loadDemoData } = useDemoStore();
 
   useEffect(() => {
+    let isMounted = true;
+
+    const isDemoMode = () => document.cookie
+      .split(';')
+      .some((cookie) => cookie.trim() === 'demo_mode=true');
+
+    const redirectAuthenticatedUser = async () => {
+      if (isDemoMode()) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (isMounted && session?.user) {
+        router.push('/dashboard');
+      }
+    };
+
+    redirectAuthenticatedUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user && !isDemoMode()) {
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!gridRef.current) return;
       // Get the exact physical bounds of the grid, ensuring perfect tracking even if scrolling affects fixed positioning
@@ -124,9 +157,13 @@ export default function Home() {
             priority
           />
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
-            Masuk
+        <div className="flex items-center gap-2.5">
+          <Link 
+            href="/dashboard" 
+            className="relative px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold rounded-full transition-all hover:scale-105 active:scale-95 group"
+          >
+            <span className="absolute inset-0 rounded-full border border-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse pointer-events-none group-hover:shadow-[0_0_25px_rgba(251,191,36,0.8)]"></span>
+            <span className="relative z-10">Masuk</span>
           </Link>
           <button 
             onClick={() => {
@@ -175,7 +212,7 @@ export default function Home() {
         </div>
 
         {/* Pain Points Section */}
-        <div className="w-full mt-40">
+        <div className="w-full mt-64">
           <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
             <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Sering Mengalami Ini?</h2>
           </div>

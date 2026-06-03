@@ -9,6 +9,8 @@ import Tooltip from './Tooltip';
 import { useAlert } from '@/contexts/AlertContext';
 import type { z } from 'zod';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 import {
   PTKP_VALUES,
@@ -22,108 +24,21 @@ import {
   type PtkpStatus,
 } from '@/lib/taxEngine';
 
-const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
-const parseFormattedNumber = (value: string) => {
-  const normalized = value.replace(/[^\d]/g, '');
-  return normalized ? Number(normalized) : 0;
-};
-
-const toTitleCase = (str: string) => {
-  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
-};
-
-const currentYear = new Date().getFullYear();
-
-function SchemeRadioPicker<T extends string | boolean>({
-  value,
-  onChange,
-  options
-}: {
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string; tooltip?: string }[];
-}) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup">
-      {options.map((option, index) => {
-        const selected = value === option.value;
-        return (
-          <div
-            key={String(option.value) + index}
-            onClick={() => onChange(option.value)}
-            className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left outline-none transition focus:ring-2 focus:ring-blue-500/30 ${
-              selected
-                ? 'border-blue-500/70 bg-blue-500/10 text-white shadow-lg shadow-blue-950/20'
-                : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-blue-500/45 hover:bg-slate-950/70'
-            }`}
-            role="radio"
-            aria-checked={selected}
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${selected ? 'border-blue-400' : 'border-slate-500'}`}>
-                {selected && <span className="h-2.5 w-2.5 rounded-full bg-blue-400"></span>}
-              </span>
-              <span className="truncate text-sm font-bold">{option.label}</span>
-            </span>
-            {option.tooltip && <Tooltip content={option.tooltip} align={index % 2 !== 0 ? 'right' : 'center'} />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-const taxPeriodOptions: SelectOption[] = [
-  { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' }, { value: '03', label: 'Maret' },
-  { value: '04', label: 'April' }, { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
-  { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' }, { value: '09', label: 'September' },
-  { value: '10', label: 'Oktober' }, { value: '11', label: 'November' }, { value: '12', label: 'Desember' },
-];
-
-const ptkpOptions: SelectOption[] = [
-  { value: 'TK/0', label: 'TK/0' }, { value: 'TK/1', label: 'TK/1' }, { value: 'TK/2', label: 'TK/2' }, { value: 'TK/3', label: 'TK/3' },
-  { value: 'K/0', label: 'K/0' }, { value: 'K/1', label: 'K/1' }, { value: 'K/2', label: 'K/2' }, { value: 'K/3', label: 'K/3' },
-];
-
-const jenisPemotonganOptions: SelectOption[] = [
-  { value: 'bulanan', label: 'PPh 21 Bulanan' },
-  { value: 'tahunan', label: 'PPh 21 Tahunan' },
-];
-
-const pph21TidakFinalOptions: SelectOption[] = [
-  { value: '21-100-03', label: '21-100-03 Pegawai Tidak Tetap' },
-  { value: '21-100-04', label: '21-100-04 Distributor Pemasaran Berjenjang' },
-  { value: '21-100-05', label: '21-100-05 Agen Asuransi' },
-  { value: '21-100-06', label: '21-100-06 Penjaja Barang Dagangan' },
-  { value: '21-100-07', label: '21-100-07 Tenaga Ahli' },
-  { value: '21-100-08', label: '21-100-08 Seniman' },
-  { value: '21-100-09', label: '21-100-09 Bukan Pegawai Lainnya' },
-];
-
-const corporateTaxModeOptions: SelectOption[] = [
-  { value: 'general', label: 'WP Badan umum - 22%' },
-  { value: 'public_company', label: 'Perseroan terbuka - 19%' },
-  { value: 'umkm_final', label: 'Badan UMKM final - 0,5% omzet' },
-];
-
-const pph23SewaOptions: SelectOption[] = [
-  { value: 'pphFinal', label: 'Sewa Tanah/Bangunan (PPh Final 10%)' },
-  { value: 'pph23', label: 'Sewa Harta Lainnya (PPh 23 - 2%)' },
-];
-
-const investasiOptions: SelectOption[] = [
-  { value: 'investasi_dividen', label: 'Dividen (PPh Final - 10%)' },
-  { value: 'investasi_bunga', label: 'Bunga/Royalti (PPh 23 - 15%)' },
-  { value: 'investasi_luar_negeri', label: 'Subjek Luar Negeri (PPh 26 - 20%)' },
-];
-
-const pphUnificationOptions: SelectOption[] = [
-  { value: 'pph22_government_goods', label: 'PPh 22 Bendahara Pemerintah - 1,5%' },
-  { value: 'pph22_import_api', label: 'PPh 22 Impor API - 2,5%' },
-  { value: 'pph22_import_non_api', label: 'PPh 22 Impor Non-API - 7,5%' },
-  { value: 'pph4_land_building_transfer', label: 'PPh 4(2) Pengalihan Tanah/Bangunan - 2,5%' },
-  { value: 'pph15_domestic_shipping', label: 'PPh 15 Pelayaran Dalam Negeri - 1,2%' },
-];
+import {
+  formatNumberInput,
+  parseFormattedNumber,
+  toTitleCase,
+  currentYear,
+  SchemeRadioPicker,
+  taxPeriodOptions,
+  ptkpOptions,
+  jenisPemotonganOptions,
+  pph21TidakFinalOptions,
+  corporateTaxModeOptions,
+  pph23SewaOptions,
+  investasiOptions,
+  pphUnificationOptions
+} from '@/components/profile/IncomeSourceShared';
 
 type IncomeSourceFormValues = z.infer<typeof incomeSourceSchema>;
 
@@ -396,17 +311,12 @@ export default function IncomeSourceForm({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-              Nama Sumber / Instansi <span className="text-red-500 ml-1">*</span>
-            </label>
-            <input
-              {...register('sourceName')}
-              placeholder="Contoh: PT Telkom Indonesia, Freelance UI Design"
-              className={`w-full bg-slate-950/50 border text-white rounded-xl px-4 py-3 text-sm focus:ring-2 outline-none transition-all font-medium ${errors.sourceName ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : 'border-slate-800 focus:ring-blue-500/50 focus:border-blue-500'}`}
-            />
-            {errors.sourceName && <span className="text-xs text-red-500">{errors.sourceName.message}</span>}
-          </div>
+          <Input
+            label="Nama Sumber / Instansi *"
+            {...register('sourceName')}
+            placeholder="Contoh: PT Telkom Indonesia, Freelance UI Design"
+            error={errors.sourceName?.message}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -434,16 +344,12 @@ export default function IncomeSourceForm({
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                Tahun Pajak
-              </label>
-              <input
-                type="number"
-                {...register('taxYear', { valueAsNumber: true })}
-                className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-              />
-            </div>
+            <Input
+              label="Tahun Pajak"
+              type="number"
+              {...register('taxYear', { valueAsNumber: true })}
+              className="font-mono"
+            />
           </div>
 
           {/* DYNAMIC FIELDS BY SOURCE TYPE */}
@@ -622,17 +528,14 @@ export default function IncomeSourceForm({
                   )} />
                 </div>
                 <div className="space-y-1.5 mt-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                    Tahun Mulai Terdaftar UMKM
-                    <Tooltip content="Masa berlaku PPh Final 0.5% maksimal 7 tahun untuk Orang Pribadi sejak tahun terdaftar." />
-                  </label>
-                  <input
+                  <Input
+                    label="Tahun Mulai Terdaftar UMKM"
                     type="number"
                     {...register('registrationYearForUmkm', {
                       setValueAs: (value) => value === '' ? null : Number(value),
                     })}
                     placeholder={`Contoh: 2021`}
-                    className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono"
+                    className="font-mono"
                   />
                 </div>
               </>
@@ -721,16 +624,14 @@ export default function IncomeSourceForm({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    NPWP Pemotong <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <Input
+                    label="NPWP Pemotong *"
                     {...register('npwpPemotong')}
                     maxLength={16}
                     placeholder="15/16 digit"
-                    className={`w-full bg-slate-950/40 border ${errors.npwpPemotong ? 'border-red-500' : 'border-slate-800/80'} text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono`}
+                    className="font-mono"
+                    error={errors.npwpPemotong?.message}
                   />
-                  {errors.npwpPemotong && <span className="text-[10px] text-red-500">{errors.npwpPemotong.message}</span>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -766,13 +667,13 @@ export default function IncomeSourceForm({
 
           <div className="flex gap-3 pt-2">
             {onCancel && (
-              <button type="button" onClick={onCancel} className="w-1/3 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-750 text-slate-300 font-bold rounded-xl transition-all text-xs uppercase tracking-wider">
+              <Button type="button" onClick={onCancel} variant="secondary" className="w-1/3">
                 Batal
-              </button>
+              </Button>
             )}
-            <button type="submit" disabled={isPending} className="relative flex-1 overflow-hidden rounded-xl bg-blue-600 py-3 font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50 outline-none text-xs uppercase tracking-wider">
+            <Button type="submit" isLoading={isPending} variant="primary" className="flex-1">
               {isPending ? 'Menyimpan...' : editSource ? 'Simpan Perubahan' : 'Catat Penghasilan'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

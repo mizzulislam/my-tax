@@ -26,13 +26,14 @@ export function useFetchAssets(taxYear?: number) {
         return (taxYear ? demoState.demoAssets.filter(a => a.taxYear === taxYear) : demoState.demoAssets) as Asset[];
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return [];
 
       let query = supabase
         .from('assets')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id,user_id,asset_name,asset_type,acquisition_year,acquisition_value,current_value,description,tax_year,created_at')
+        .eq('user_id', userId);
 
       if (taxYear) {
         query = query.eq('tax_year', taxYear);
@@ -77,11 +78,12 @@ export function useMutateAsset() {
         return { id: 'demo-asset', ...input };
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
 
       const payload = {
-        user_id: user.id,
+        user_id: userId,
         asset_name: input.assetName,
         asset_type: input.assetType,
         acquisition_year: input.acquisitionYear,

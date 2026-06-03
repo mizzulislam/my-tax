@@ -19,6 +19,13 @@ export default function SelectionAiHelper() {
   const inputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  const handleClose = () => {
+    setPosition(null);
+    setHighlightRects([]);
+    setSelectedText('');
+    setInput('');
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -130,13 +137,6 @@ export default function SelectionAiHelper() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [position]);
-
-  const handleClose = () => {
-    setPosition(null);
-    setHighlightRects([]);
-    setSelectedText('');
-    setInput('');
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

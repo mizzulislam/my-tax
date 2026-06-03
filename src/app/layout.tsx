@@ -17,8 +17,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My Tax App",
-  description: "Aplikasi perpajakan modern",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://my-tax.app"),
+  title: "My Tax - Asisten Persiapan Pajak Pribadi AI",
+  description: "My Tax membantu Anda merapikan data pajak, dokumen, dan melakukan simulasi sebelum lapor ke DJP. Cocok untuk karyawan, freelancer, dan UMKM kecil di Indonesia.",
+  openGraph: {
+    title: "My Tax - Asisten Persiapan Pajak Pribadi AI",
+    description: "My Tax membantu persiapan lapor SPT dengan Readiness Score dan AI Insights. #JuaraVibeCoding",
+    url: "/",
+    siteName: "My Tax",
+    images: [
+      {
+        url: "/og-image.jpg", // Pastikan file ini ada di folder public/
+        width: 1200,
+        height: 630,
+        alt: "My Tax App Preview",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "My Tax - Asisten Pajak Pintar",
+    description: "Persiapan pajak tak pernah semudah ini dengan AI. Cek Readiness Score kamu sekarang!",
+  },
+  icons: {
+    icon: "/logos/my-tax-logo-icon.svg",
+    shortcut: "/logos/my-tax-logo-icon.svg",
+    apple: "/logos/my-tax-logo-icon.svg",
+  },
 };
 
 export default async function RootLayout({

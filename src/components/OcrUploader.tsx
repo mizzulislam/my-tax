@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Tooltip from './Tooltip';
 import { useAlert } from '@/contexts/AlertContext';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
 const parseFormattedNumber = (value: string) => {
@@ -212,16 +214,17 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
             </div>
             <h4 className="text-sm font-bold text-rose-400">Pemindaian Gagal</h4>
             <p className="text-xs text-slate-400">{errorMsg}</p>
-            <button 
+            <Button 
               onClick={(e) => {
                 e.stopPropagation();
                 setErrorMsg(null);
                 setFileName(null);
               }}
-              className="px-4 py-2 mt-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition-colors"
+              variant="secondary"
+              className="mt-2"
             >
               Coba Lagi
-            </button>
+            </Button>
           </div>
         ) : result ? (
           <div className="flex flex-col items-center justify-center w-full animate-in fade-in zoom-in duration-300 relative z-10" onClick={(e) => e.stopPropagation()}>
@@ -257,22 +260,24 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
                 </div>
                 
                 <div className="flex items-center gap-3 w-full">
-                  <button 
+                  <Button 
                     onClick={() => {
                       setResult(null);
                       setFileName(null);
                       setEditForm(null);
                     }}
-                    className="flex-1 py-2 text-xs font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+                    variant="secondary"
+                    className="flex-1"
                   >
                     Pindai Lain
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onClick={() => setIsEditing(true)}
-                    className="flex-1 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors shadow-md shadow-blue-500/20"
+                    variant="primary"
+                    className="flex-1"
                   >
                     Lihat Selengkapnya / Edit
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : (
@@ -293,49 +298,39 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
                 </div>
 
                 <div className="space-y-3 mb-5 text-left">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal (Rp)</label>
-                    <input 
-                      type="text" 
-                      inputMode="numeric"
-                      value={formatNumberInput(editForm?.nominal || 0)} 
-                      onChange={(e) => setEditForm(prev => prev ? {...prev, nominal: parseFormattedNumber(e.target.value)} : null)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vendor / Partner</label>
-                    <input 
-                      type="text" 
-                      value={editForm?.vendor || ''} 
-                      onChange={(e) => setEditForm(prev => prev ? {...prev, vendor: e.target.value} : null)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+                  <Input 
+                    label="Nominal (Rp)"
+                    type="text" 
+                    inputMode="numeric"
+                    value={formatNumberInput(editForm?.nominal || 0)} 
+                    onChange={(e) => setEditForm(prev => prev ? {...prev, nominal: parseFormattedNumber(e.target.value)} : null)}
+                    className="font-mono"
+                  />
+                  <Input 
+                    label="Vendor / Partner"
+                    type="text" 
+                    value={editForm?.vendor || ''} 
+                    onChange={(e) => setEditForm(prev => prev ? {...prev, vendor: e.target.value} : null)}
+                  />
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jenis Pajak</label>
-                      <input 
-                        type="text" 
-                        value={editForm?.taxType || ''} 
-                        onChange={(e) => setEditForm(prev => prev ? {...prev, taxType: e.target.value} : null)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 uppercase"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tanggal</label>
-                      <input 
-                        type="date" 
-                        value={editForm?.date || ''} 
-                        onChange={(e) => setEditForm(prev => prev ? {...prev, date: e.target.value} : null)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
+                    <Input 
+                      label="Jenis Pajak"
+                      type="text" 
+                      value={editForm?.taxType || ''} 
+                      onChange={(e) => setEditForm(prev => prev ? {...prev, taxType: e.target.value} : null)}
+                      className="uppercase"
+                    />
+                    <Input 
+                      label="Tanggal"
+                      type="date" 
+                      value={editForm?.date || ''} 
+                      onChange={(e) => setEditForm(prev => prev ? {...prev, date: e.target.value} : null)}
+                    />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-3">
-                  <button 
+                  <Button 
                     type="button"
                     onClick={() => {
                       setEditForm(null);
@@ -343,16 +338,17 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
                       setFileName(null);
                       setIsEditing(false);
                     }}
-                    className="px-4 py-2 text-xs font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                    variant="secondary"
                   >
                     Batal Pindai
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     type="submit"
-                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-md shadow-emerald-500/20"
+                    variant="primary"
+                    className="bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
                   >
                     Simpan & Terapkan
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}

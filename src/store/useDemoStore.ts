@@ -57,7 +57,7 @@ export const useDemoStore = create<DemoState>((set) => ({
   setPersona: (persona) => set({ persona }),
 
   loadDemoData: (persona) => {
-    let profile: TaxpayerProfile = {
+    const profile: TaxpayerProfile = {
       fullName: 'Wajib Pajak (Demo)',
       nik: '1234567890123456',
       npwp: '123456789012345',
@@ -67,7 +67,7 @@ export const useDemoStore = create<DemoState>((set) => ({
 
     let incomeSources: IncomeSource[] = [];
     let documents: TaxDocument[] = [];
-    let assets: Asset[] = [];
+    const assets: Asset[] = [];
     let reports: TaxReportData[] = [];
 
     if (persona === 'Karyawan + Freelancer' || persona === 'Karyawan' || persona === 'Freelancer') {
@@ -190,7 +190,7 @@ export const useDemoStore = create<DemoState>((set) => ({
       (r) => r.tax_year === report.tax_year && r.tax_period === report.tax_period
     );
     
-    let newReports = [...state.demoReports];
+    const newReports = [...state.demoReports];
     
     if (existingIndex >= 0) {
       newReports[existingIndex] = { ...newReports[existingIndex], ...report };
